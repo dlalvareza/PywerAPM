@@ -263,7 +263,8 @@ class Asset_M():
         if self.type =='AUX':
             if 'Discharge' in self.cond:
                 self.elap_life = self.cond['Discharge'].eval_cond_fit_func(date)
-        
+        else:
+            self.elap_life = 0
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
 
     def AM_Index(self,date):      # Compute asset management idex
