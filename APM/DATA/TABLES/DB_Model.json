@@ -1,0 +1,61 @@
+{	
+	"TR":{
+		"DB_Name": "APM/DATA/TABLES/TR_IEEE_39.xlsx",
+		"Tables":{
+			"PF"     : "Electric_Test",
+			"IP"     : "Electric_Test",
+			"WR"     : "Electric_Test",
+			"IR"     : "Electric_Test",
+			"TR"     : "Electric_Test",
+			"TDCG"   : "DGA",
+			"Color"  : "PQ",
+			"C_H2O"  : "PQ",
+			"IT"     : "PQ",
+			"DS"     : "PQ",
+			"AN"     : "PQ",
+			"Sat"    : "PQ",
+			"F_2FAL" : "FURANS",				
+			"LF"     : "OPERATION",
+			"AT"     : "OPERATION",
+			"HS"     : "OPERATION",
+			"A"      : "OPERATION",
+			"NO"     : "OLTC_Test",
+			"YS"     : "OLTC_Test",
+			"PF_B"   : "Bushing_Test",
+			"C"      : "Bushing_Test"						
+			}
+		},
+	"CB_SF6":{
+			"DB_Name": "APM/DATA/TABLES/CB_IEEE_39.xlsx",
+			"Tables":{
+				"SF6_Leaks"             : "GAS",
+				"Gas_Condition"      : "GAS",
+				"R_Dynamic"            : "Resistance",
+				"R_Contact"             : "Resistance",
+				"Recharge_Time"     : "Mechanism",
+				"Tank"                       : "Mechanism",
+				"Bushings"                : "Mechanism"						
+				}
+			},		
+	"AUX":{
+			"DB_Name": "APM/DATA/TABLES/AUX_EXAMPLE_IEEE_39.xlsx",
+			"Tables":{
+				"Room"                     : "Visual_Room",
+				"Containers"          : "Visual_Containers",
+				"Overall_Cond"       : "Visual_Overall_Cond",
+				"Electrolyte"         : "Physic",
+				"Gravity"               : "Physic",
+				"Charge"                 : "Electric",
+				"Discharge"           : "Electric",
+				"Voltage"                : "Electric",	
+				"Impedance"           : "Electric"					
+					}
+				},
+    "LN":{
+		"DB_Name": "APM/DATA/TABLES/CB_IEEE_39.xlsx",
+		"Tables":{
+			"TR"     : "Electric_Test",
+			"VI"     : "Electric_Test"
+			}
+	    }		
+}
