@@ -38,8 +38,8 @@ Assets  = APM(asset_portfolio_source,load_growth)
 
 
 # Monte Carlo Simulation
-#N     = 750
-N     = 24
+N     = 750
+#N     = 24
 
 
 

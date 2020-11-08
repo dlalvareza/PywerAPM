@@ -260,18 +260,14 @@ def Plot_Histogram_ENS(DF,Asset_port,Years,Type=None,Factor='GWh'):
     for year in Years:
         fig, ax1 = plt.subplots(figsize= [4, 3]) 
         kwargs_hist = {'cumulative': False,'bw':0.5,'cut':0}
-        #kwargs_hist = {'cumulative': False,'bw':0.5}
         kwargs = {'cumulative': False,"alpha": 0.75,"linewidth": 1.5,'edgecolor':'#000000'}
-        #kwargs = {'cumulative': False, "linewidth": 2,'edgecolor':'#000000'}
-        #sns.distplot(df[year], hist_kws=kwargs, kde_kws=kwargs_hist,norm_hist=True,kde=False,label=year,ax=ax1)
         sns.distplot(df[year], hist_kws=kwargs, kde_kws=kwargs_hist,norm_hist=True,kde=False,ax=ax1)
-        #sns.distplot(df,col='year', hist_kws=kwargs, kde_kws=kwargs_hist,norm_hist=True,kde=False,fit=stats.beta,label=year,ax=ax1)
     
         plt.xlabel('Energy not supplied (ENS) - ['+Factor+']')
-        #plt.legend()
         plt.ylabel('Density')
         plt.xlim(0,df[year].max())
-        plt.savefig('RESULTS/'+str(year)+'_Histogram_ENS_Load.pdf', bbox_inches = "tight",label=year)
+        #plt.savefig('RESULTS/'+str(year)+'_Histogram_ENS_Load.pdf', bbox_inches = "tight",label=year)
+        plt.savefig('RESULTS/'+str(year)+'_Histogram_ENS_Load.pdf', bbox_inches = "tight")
         plt.close()
 
 
@@ -401,7 +397,7 @@ def Risk_Matrix_ENS(DF,Asset_dF,year_list,N,Type=None,Factor='GWh'):
     df_data = df_data.sort_values('RI', ascending = False)
     df_data = df_data.sort_values('Year')
 
-    plt.xkcd()
+    #plt.xkcd()
     f, (ax) = plt.subplots(figsize= [8, 4])
     ax = sns.barplot(x="Year", y="RI", hue="Name", data=df_data, palette="Set1", alpha=.75)
     plt.setp(ax.get_legend().get_texts(), fontsize='x-small') # for legend text
@@ -800,5 +796,100 @@ def plot_historic_condition_by_asset(asset,path):
 
 
 
+# Plot reports 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def f_risk_aversion(DF,Years,file,Factor='GWh'):
+    sns.set_palette("Set1")
+    fig, ax = plt.subplots(figsize= [6, 3]) 
+    for year in Years:
+        kwargs = {'cumulative': True,'bw':3,'cut':0,'shade':True}
+        sns.distplot(DF[year], hist=False, kde_kws=kwargs,norm_hist=True,kde=True,label=year,ax=ax)
+        
+        # Show vertical lines
+        data_x, data_y = ax.lines[-1].get_data()
+        color          = ax.lines[-1].get_c()
+        for yi in cum_ens_pof:   # coordinate where to find the value of kde curve
+            xi = np.interp(yi,data_y,data_x)
+            y  = [0,yi]
+            x  = [xi,xi]
+            ax.plot(x, y,color=color,ls='--',linewidth= 1,alpha=0.5)        # Vertical line
+            if year==Years[-1]:   # Plot horizontal lines just for the last year - avoid overplotting
+                
+                y  = [yi,yi]
+                x  = [0,xi]
+                ax.plot(x, y,color='black',ls=':',linewidth= 0.5,alpha=0.75)        # Horizontal line
 
+    plt.xlabel('Energy not supplied (ENS) - ['+Factor+']')
+    plt.legend()
+    plt.ylabel('Density')
+    plt.xlim(0,DF[year].max())
+    plt.ylim(0,1.05)
+    plt.savefig(file, bbox_inches = "tight", dpi=300)
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def f_Cr_Hist(DF,file,Factor='GWh'):
+    #sns.set_palette("Set1")
+    #fig, ax = plt.subplots() 
+
+    fig, ax1 = plt.subplots(figsize= [7, 3]) 
+    kwargs_hist = {'cumulative': False,'bw':0.5,'cut':0}
+    kwargs = {'cumulative': False,"alpha": 0.75,"linewidth": 1.5,'edgecolor':'#000000'}
+    sns.distplot(DF, hist_kws=kwargs, kde_kws=kwargs_hist,norm_hist=True,kde=False,ax=ax1)
     
+    plt.xlabel('Energy not supplied (ENS) - ['+Factor+']')
+    plt.ylabel('Density')
+    plt.xlim(0,DF.max())
+    plt.savefig(file, bbox_inches = "tight", dpi=300)
+    plt.close()
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def f_Risk_Matrix(DF,file,Factor='GWh',y="ENS"):
+
+    fig, ax = plt.subplots(figsize= [7, 3]) 
+
+    sns.scatterplot(x="POF", y=y, hue="RI", size="MTTR", alpha=.75, data=DF, palette="RdYlGn_r",ax=ax)
+    #for line in DF.index.values:
+    #    ax.text(DF.POF[line], DF.ENS[line], DF.Name[line], horizontalalignment='left', va='bottom',size=4, color='black')
+        
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.setp(ax.get_legend().get_texts(), fontsize='xx-small') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='small') # for legend title        
+    plt.ylabel('Criticality - $RMS_{'+y+'}$ - ['+Factor+']')
+    plt.xlabel('Probability of Failure (POF) - [%]')
+    plt.savefig(file, bbox_inches = "tight", dpi=300)
+    plt.close()
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def f_Pareto_Year(DF,file,Factor='GWh'):
+    df_data = DF[DF['RI'] > 0.005]
+    df_data = df_data.sort_values('RI', ascending = False)
+
+    f, (ax) = plt.subplots(figsize= [8, 3])
+    ax = sns.barplot(x="Name", y="RI", hue="MTTR", data=df_data, palette="Set1", alpha=.5)
+    #plt.setp(ax.get_legend().get_texts(), fontsize='x-small') # for legend text
+    #plt.setp(ax.get_legend().get_title(), fontsize='small') # for legend title
+
+    #ax.legend(loc='lower center', ncol=5, bbox_to_anchor=(0.5, 1), fontsize='small')
+    #plt.ylabel('Risk Index (RI) - ['+Factor+']')
+    ax.set_xticklabels(ax.get_xticklabels(),rotation=90,Fontsize=8)
+    plt.savefig(file, bbox_inches = "tight")
+    plt.close()
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def f_Pareto(DF,file,Factor='GWh'):
+    df_data = DF[DF['RI'] > 0.05]
+    df_data = df_data.sort_values('RI', ascending = False)
+    df_data = df_data.sort_values('Year')
+
+    #plt.xkcd()
+    f, (ax) = plt.subplots(figsize= [8, 4])
+    ax = sns.barplot(x="Year", y="RI", hue="Name", data=df_data, palette="Set1", alpha=.75)
+    plt.setp(ax.get_legend().get_texts(), fontsize='x-small') # for legend text
+    plt.setp(ax.get_legend().get_title(), fontsize='small') # for legend title
+
+    ax.legend(loc='lower center', ncol=5, bbox_to_anchor=(0.5, 1), fontsize='small')
+    plt.ylabel('Risk Index (RI) - ['+Factor+']')
+    plt.savefig(file, bbox_inches = "tight")
+    plt.close()
+

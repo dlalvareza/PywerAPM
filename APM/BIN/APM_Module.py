@@ -11,22 +11,14 @@
 
 import pandas as pd
 import random
-import json
 from scipy.interpolate import interp1d
 import calendar
 import numpy as np
 import datetime
 
-from APM_Module_Tools import Fitt_constants_HI
-
-# Read tables and return dicctinary  
-def Read_Table(source,Type='Json'):
-    data = None
-    if Type=='Json':
-        with open(source) as json_file:
-            data = json.load(json_file)
-
-    return data        
+from APM_Module_Tools import Fitt_constants_HI,Read_Table
+from APM_Module_Regulatory import APM_Regulatory                    # Import regulatory class
+     
 
 # Function to allocate asset list
 def Read_Table_Conditions(DB_name,table,row,ID,source_type='Excel'):
@@ -53,12 +45,19 @@ def Load_Asset_Portfolio(file,table):
 
 
 class APM():
-    def __init__(self,source,load_growth):
+    def __init__(self,case_sett,load_growth):
+        
+        # Asset porfolio source
+        source = case_sett['portfolio_source']
+
         self.Asset_Portfolio_List = Load_Asset_Portfolio(source,'ASSETS')
         self.Asset_Location       = Load_Asset_Portfolio(source,'LOCATIONS')
         asset = {}                                        # create Dictionary of Assets
+
+        #db_structure = case_sett['database_sett']
         for id,row in self.Asset_Portfolio_List.iterrows():
-            asset[id] = Asset_M(row,id)
+            #asset[id] = Asset_M(row,id,db_structure)
+            asset[id] = Asset_M(row,id,case_sett)
         self.Asset_Portfolio = asset
         self.load_growth     = load_growth
 
@@ -73,7 +72,6 @@ class APM():
         for id in assets:
             fail_succes = random.random() 
             asset       = assets[id]
-            #pof         = asset.pof
             pof         = asset.pof_2
             if asset.fail==True:
                  asset.time_fail +=1
@@ -96,7 +94,7 @@ class APM():
 
         for n in range(n_hours):    
             date = date_beg+ datetime.timedelta(hours=n)    
-            self.Compute_All_AM_Index(date)                                  # Update performance index 
+            self.Compute_All_AM_Index(date.date())                                  # Update performance index 
             Asset_status = self.POF_Status()                                 # POF matrix
             day_name     = calendar.day_name[date.weekday()] 
             h            = n%24
@@ -124,7 +122,13 @@ class APM():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 class Asset_M():
-    def __init__(self,data,id):
+    def __init__(self,data,id,db):
+        # id -> Asset id
+        # db -> dbase structure name
+        self.db        = db
+        db_struc       = db['database_sett']#db
+        
+    
         self.id        = id
         self.name      = data.Name
         self.type      = data.Type
@@ -133,9 +137,17 @@ class Asset_M():
         self.time_fail = 0                       # Asset time failed
         #self.oper_date = datetime.date(1980, 1, 1)
 
-        DB_Model            = self.Load_DB_Model()
+        #DB_Model            = self.Load_DB_Model(db)
+        DB_Model            = self.Load_DB_Model(db_struc)
         HI_Weigths          = self.Weights()
         HI_Con_Limits       = self.Load_Cond_Limits()
+
+        # Load constant data 
+        #->data = Read_Table(db['database_Cons_Set'])
+        #'Cons'
+        #->data = Read_Table(data['Cons']['DB_Name'])
+        #->l_AL = data[self.type]    # Average life in years
+        
 
         # Load condition 
         self.cond  = self.Load_Condition(DB_Model,HI_Weigths,HI_Con_Limits) 
@@ -155,13 +167,19 @@ class Asset_M():
         self.lambda_k     = None   
         self.elap_life    = None
 
+        # Regulatory conditions
+        #date              = 
+        self.apm_reg      = APM_Regulatory(self.db,self.data)
+
+
+
+        print('DavE 707')
     def Load_Asset_Data(self,Model):
         date_base_name =  Model['DB_Name']
         df = Read_Asset_Data(date_base_name,self.type,self.id)
         
         dic =  df.to_dict('r') 
         dic = dic[0]
-
 
         dic['Opt_Year'] = datetime.date(dic['Opt_Year'], 1, 1)
 
@@ -190,9 +208,9 @@ class Asset_M():
         return(dict_condition)
 
 
-    def Load_DB_Model(self):
-        data = Read_Table('APM/DATA/TABLES/DB_Model.json')
-        data = data[self.type]
+    def Load_DB_Model(self,db_struc):
+        data  = Read_Table(db_struc)
+        data  = data[self.type]
         return data
 
     def Weights(self):
@@ -264,7 +282,15 @@ class Asset_M():
             if 'Discharge' in self.cond:
                 self.elap_life = self.cond['Discharge'].eval_cond_fit_func(date)
         else:
-            self.elap_life = 0
+            data = Read_Table(self.db['database_Cons_Set'])
+            #'Cons'
+            data           = Read_Table(data['Cons']['DB_Name'])        # Data bases with average lifes
+            l_AL           = data[self.type]                            # Average life in years
+            l_opt_year     = self.data['Opt_Year'].year
+            l_curr_year    = date.year
+            self.elap_life = (l_curr_year - l_opt_year)/l_AL
+        # Regulatory life
+        self.apm_reg.Regulatory_EL(l_curr_year,l_opt_year)     
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
 
     def AM_Index(self,date):      # Compute asset management idex
@@ -328,16 +354,21 @@ class Asset_Condition():
 # Fitting exponetial grown using historical condition records
     def HI_Forecast_Fitt_Function(self,df):
         if len(df)>0:
+            #df = df.sort('Date')
+            df = df.sort_values(by=['Date'])
             date              =df['Date'].dt.date.values
             self.opt_date     = date[0]-datetime.timedelta(days=365*5)
             x          =  np.asarray([(x - self.opt_date).days/365 for x in date])
             y          = df['val_nor'].values
             
+            #x_end      = x[-1]+35                      # Assume 35 years as end of life
             x_end      = x[-1]+35                      # Assume 35 years as end of life
             # Add initial and final contion last values 
             x =  np.concatenate(([0], x, [x_end]))
             y =  np.concatenate(([0], y, [1]))
-
+            #print(df)
+            #print(x)
+            #print(y)
             fit_f   = Fitt_constants_HI(x,y)
         return fit_f
 
@@ -345,6 +376,8 @@ class Asset_Condition():
     def eval_cond_fit_func(self,date):
         #x = (date.date() - self.opt_date).days/365        # Date to eval in years
         x = (date - self.opt_date).days/365        # Date to eval in years
+        #print(date)
+        #x = (date.date() - self.opt_date).days/365        # Date to eval in years
         y = self.forecast_f(x) 
         return y
 
@@ -368,4 +401,3 @@ class Asset_Condition():
             low   = y[-1]
             upp   = y[0]
         return interp1d(x, y,fill_value=(low, upp), bounds_error=False)
-    

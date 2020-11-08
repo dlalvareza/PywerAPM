@@ -15,7 +15,8 @@ from scipy.optimize import curve_fit
 import numpy as np
 from math import exp
 import calendar
-
+import json
+import pandas as pd
 
 def trail_date(year,day_number,h=1):
     return  (datetime.datetime(year, 1, 1,h) + datetime.timedelta(day_number - 1))
@@ -43,3 +44,14 @@ def Fitt_constants_HI(x,y):
         return HI_Forecast(t,beta,alpha)
 
     return eval_hi          # Return fitted function 
+
+
+# Read tables and return dicctinary  
+def Read_Table(source,Type='Json',sheet=None):
+    data = None
+    if Type=='Json':
+        with open(source) as json_file:
+            data = json.load(json_file)
+    if Type=='Excel':
+            data   = pd.read_excel(open(source, 'rb'), sheet_name=sheet) # Sheet with loads  tags
+    return data   

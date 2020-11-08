@@ -125,10 +125,26 @@
 								}						
 						},	
     "LN":{
-		"DB_Name": "APM/DATA/TABLES/LN_IEEE_39.xlsx",
-		"Tables":{
-			"TR"     : "Electric_Test",
-			"VI"     : "Electric_Test"
-			}
-	    }		
+		"Aeolian"     : {
+								"Cond 1":[0,2,4,5,6]
+								},
+		"Torsion"     : {
+								"Cond 1":[26,20,10,5,4]
+								},
+		"Strength"     : {
+								"Cond 1":[110,100,90,85,80]
+								},
+		"Corrosion"   : {
+								"Cond 1":[0,25,50,75,80]
+								},
+		"Visual"        : {
+								"Cond 1":[0,2,8,10,11]
+								},
+		"Maintenance"     : {
+								"Cond 1":[0,1,2,3,4]
+								},								
+		"Age"           : {
+								"Cond 1":[0,5,15,30,45]
+								}
+	}
 }

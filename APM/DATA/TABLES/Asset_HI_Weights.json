@@ -61,9 +61,18 @@
 					}
 			},
     "LN":{
-		"Cable": {
-				"TR": 2,
-				"VI": 2
-				}
-		}	
+			"Mechanical": {
+					"Aeolian":   2,
+					"Torsion":   2,
+					"Strength": 2
+					},
+			"Physical": {
+					"Corrosion": 1,
+					"Visual":        1
+					},
+			"Service": {
+					"Maintenance":        0.5,
+					"Age":       0.5
+					}
+			}	
 }
