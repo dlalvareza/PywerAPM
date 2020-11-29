@@ -118,8 +118,8 @@ def Report_ACM_df(DF,Asset_dF,year_list,N,Type=None,Factor='GWh'):
             df_by_year         = DF[DF.Date.dt.year<=year]
             df_asset           = df_by_year[df_by_year[asset.Name]==True]                 # Check if the asset fail
             mttr               = asset.MTTR
-            trials             = 24*365*(year-y_beg)*N
-            D_time             = 24*365*(year-y_beg)/mttr                           # Cumulative years
+            trials             = 24*365.25*(year-y_beg)*N
+            D_time             = 24*365.25*(year-y_beg)/mttr                           # Cumulative years
             #lam                = D_time*(len(df_asset)/len(df_by_year))
             A                  = 100*((trials-len(df_asset))/trials)                  # Avaliability
             lam                = D_time*(len(df_asset)/trials)
@@ -129,7 +129,7 @@ def Report_ACM_df(DF,Asset_dF,year_list,N,Type=None,Factor='GWh'):
             saidi_rms          = np.sqrt(np.mean(df_asset['SAIDI'].values**2))
             ens.append(ens_rms) 
             mttr_dic.append(mttr)
-            cr_rms            = np.sqrt(np.mean(df_asset['Cr'].values**2))
+            cr_rms             = np.sqrt(np.mean(df_asset['Cr'].values**2))
             asset_name.append(asset.Name)
             year_val.append(year)
 

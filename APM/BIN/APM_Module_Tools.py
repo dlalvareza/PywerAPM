@@ -40,7 +40,6 @@ def Fitt_constants_HI(x,y):
      # Curve fitt of HI
     (beta,alpha),_  =  curve_fit(HI_Forecast,x,y,method='dogbox')
     def eval_hi(t):
-        #t =date.toordinal()
         return HI_Forecast(t,beta,alpha)
 
     return eval_hi          # Return fitted function 

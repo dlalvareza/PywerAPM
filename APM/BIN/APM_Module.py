@@ -88,14 +88,22 @@ class APM():
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-    def Risk_Index_During_Time(self,Cont,date_beg,n_hours,trail):
-
+    def Risk_Index_During_Time(self,Cont,date_beg,n_hours,trail,df_pof=pd.DataFrame()):
+        print(df_pof)
         res = []
 
         for n in range(n_hours):    
             date = date_beg+ datetime.timedelta(hours=n)    
-            self.Compute_All_AM_Index(date.date())                                  # Update performance index 
-            Asset_status = self.POF_Status()                                 # POF matrix
+            l_date = date.date()
+            h                      = n%24
+            if h==0: 
+                if df_pof.empty:                             
+                    self.Compute_All_AM_Index(l_date)                     # Update performance index 
+                else:                                                              
+                    for l_id in self.Asset_Portfolio:                     # pof was compute previusly 
+                        self.Asset_Portfolio[l_id].pof_2 = df_pof.loc[l_date][l_id]
+
+            '''Asset_status = self.POF_Status()                                 # POF matrix
             day_name     = calendar.day_name[date.weekday()] 
             h            = n%24
             n_days       = datetime.timedelta(hours=n).days
@@ -110,10 +118,34 @@ class APM():
                 Asset_status['Cr']     = Cr
                 Asset_status['SAIDI']  = SAIDI
                 Asset_status['Ite']    = trail
+                res.append(Asset_status)'''
+
+            Asset_status = self.POF_Status()                                 # POF matrix
+
+            if True in Asset_status.values():
+                day_name               = calendar.day_name[date.weekday()] 
+                n_days                 = datetime.timedelta(hours=n).days
+                growth_rate            = Cont.f_growth_rate(n_days)                      # Growth rate at day n
+                Cr,SAIDI               = Cont.Run_Load_Flow(Cont.net,day_name,h,Asset_status,growth_rate=growth_rate)  
+                # Update data              
+                Asset_status['Date']   = date
+                Asset_status['Cr']     = Cr
+                Asset_status['SAIDI']  = SAIDI
+                Asset_status['Ite']    = trail
                 res.append(Asset_status)
-        
+
         return res
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+#                       Eval HI without data                                #         
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def HI_Replace():
+    #x       =  np.concatenate(([0], ,[35]))
+    #y       =  np.concatenate(([0], , [1]))
+    x        = np.array([0,10,25,35])
+    y        = np.array([0,0.1,0.5,0.99])
+    fit_f   = Fitt_constants_HI(x,y)
+    return fit_f
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                       #
@@ -128,7 +160,9 @@ class Asset_M():
         self.db        = db
         db_struc       = db['database_sett']#db
         
-    
+        #self.decision  = None                 # List of decisions 
+        self.decision  =pd.DataFrame() 
+
         self.id        = id
         self.name      = data.Name
         self.type      = data.Type
@@ -136,6 +170,8 @@ class Asset_M():
         self.fail      = False
         self.time_fail = 0                       # Asset time failed
         #self.oper_date = datetime.date(1980, 1, 1)
+
+        self.hi_rem        = HI_Replace()         # Function to estimate the HI of a new asset 
 
         #DB_Model            = self.Load_DB_Model(db)
         DB_Model            = self.Load_DB_Model(db_struc)
@@ -154,11 +190,18 @@ class Asset_M():
 
         # Lambda function 
         self.lambda_f      = self.Load_Lambda_Constants()
-        # Cumulative lambda
-        self.sum_lambda    = 0
+
         # Load asset data 
         self.data         = self.Load_Asset_Data(DB_Model)
 
+        self.reset_init()
+        # Regulatory conditions
+        #date              = 
+        self.apm_reg      = APM_Regulatory(self.db,self.data)
+
+
+
+    def reset_init(self):
         # # # # # # # # # # # # # # #
         self.r            = None
         self.pof          = None 
@@ -166,14 +209,9 @@ class Asset_M():
         self.r            = None 
         self.lambda_k     = None   
         self.elap_life    = None
+        # Cumulative lambda
+        self.sum_lambda   = 0      
 
-        # Regulatory conditions
-        #date              = 
-        self.apm_reg      = APM_Regulatory(self.db,self.data)
-
-
-
-        print('DavE 707')
     def Load_Asset_Data(self,Model):
         date_base_name =  Model['DB_Name']
         df = Read_Asset_Data(date_base_name,self.type,self.id)
@@ -205,6 +243,7 @@ class Asset_M():
                     dict_condition[cond] = Asset_Condition(df,w,con_limits)
 
                 self.re            = sum_w/w_t    # ri ->Reliability index
+                self.w_total       = sum_w        # Sum of total weight available conditions
         return(dict_condition)
 
 
@@ -238,29 +277,50 @@ class Asset_M():
             
         return compute_lambda
 
-    def Eval_Asset_Condition(self,date):  
+    def Eval_Asset_Condition(self,date,desc_date=None):  
+        #
         condition = self.cond
 
         sum_sw = 0
         sum_w = 0
 
-        for n in condition:
-            S = condition[n].eval_cond_fit_func(date)
-            w = condition[n].w
-            sum_sw +=S*w
-            sum_w  +=w
+        if desc_date==None or date<desc_date:   # Check if a decision is planned to be performed 
+            for n in condition:
+                S = condition[n].eval_cond_fit_func(date)
+                w = condition[n].w
+                sum_sw +=S*w
+                sum_w  +=w
 
-        if sum_w==0:
-            hi  = None
+            if sum_w==0:
+                hi  = None
+            else:
+                hi  = sum_sw/sum_w               # Weighted Health index
         else:
-            hi  = sum_sw/sum_w               # Weighted Health index
+            #print('Dave')
+            #print(desc_date)
+            #print(date-desc_date)
+            delta_years = (date-desc_date).days/365.25
+            #print(date_years)
+            hi = self.hi_rem(delta_years)
 
+        #print(hi)
         self.date_con_eval = date
         return hi
-
+        
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #       
-    def HI(self,date,freq='hour'):
-        self.hi          = self.Eval_Asset_Condition(date)
+    def HI(self,date,freq='hour',hi=True):
+        #print('Dave 707')
+        #print(self.decision)
+        desc_date = None
+        if not self.decision.empty:
+            desc_date        = self.decision['Date'].values[0]
+
+        # # # # # # # # # # # # # # # # # # # # # # # # # #
+        if  hi:    # Compute and update the health index
+            self.hi          = self.Eval_Asset_Condition(date,desc_date=desc_date)
+        #else: 
+        #    self.hi = hi
+        # # # # # # # # # # # # # # # # # # # # # # # # # #
 
         if self.hi != None:
             lambda_k         = self.lambda_f(self.hi)   # Failure rate in times per year
@@ -278,23 +338,25 @@ class Asset_M():
         self.pof_2        = 1-np.exp(-self.lambda_k)
 
     def RL(self,date):
+        l_curr_year    = date.year
+        l_opt_year     = self.data['Opt_Year'].year
+        data = Read_Table(self.db['database_Cons_Set'])
+        #'Cons'
+        data           = Read_Table(data['Cons']['DB_Name'])        # Data bases with average lifes
+        l_AL           = data[self.type]                            # Average life in years
+
         if self.type =='AUX':
             if 'Discharge' in self.cond:
                 self.elap_life = self.cond['Discharge'].eval_cond_fit_func(date)
         else:
-            data = Read_Table(self.db['database_Cons_Set'])
-            #'Cons'
-            data           = Read_Table(data['Cons']['DB_Name'])        # Data bases with average lifes
-            l_AL           = data[self.type]                            # Average life in years
-            l_opt_year     = self.data['Opt_Year'].year
-            l_curr_year    = date.year
             self.elap_life = (l_curr_year - l_opt_year)/l_AL
         # Regulatory life
         self.apm_reg.Regulatory_EL(l_curr_year,l_opt_year)     
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
 
-    def AM_Index(self,date):      # Compute asset management idex
-        self.HI(date)
+    def AM_Index(self,date,compu_hi=True):      # Compute asset management idex
+        self.HI(date,hi=compu_hi)
+
         if self.hi != None:
             self.POF()
         self.RL(date)             # Remaining life 
@@ -304,14 +366,22 @@ class Asset_M():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
     
     def POF_R_Assessment(self,date_beg,n_hours):
-
-        pof,r,hi,lambda_k,date,sum_lambda = [],[],[],[],[],[]
+        self.reset_init()                   # Reset scenario
+        pof,r,hi,lambda_k,date,sum_lambda,pof_2 = [],[],[],[],[],[],[]
 
         #sum_lambda = 0
         for n in range(n_hours):
             test_Date = date_beg+ datetime.timedelta(hours=n)
-            self.AM_Index(test_Date)
+            
+            hour = n%24
+            if n%24 == 0:     # The health index is assumed same during an entire day
+                compu_hi = True
+            else:
+               compu_hi = False 
+            
+            self.AM_Index(test_Date,compu_hi=compu_hi)
             date.append(test_Date)
+            pof_2.append(self.pof_2)
             if self.hi !=None:
                 pof.append(self.pof*100)
                 r.append(self.r*100) 
@@ -324,10 +394,12 @@ class Asset_M():
                 hi.append(self.hi)
                 lambda_k.append(self.lambda_k)
                 sum_lambda.append(self.sum_lambda)
+            
                 
         results_dic = { 'Date':date,
                         'HI':hi,
                         'POF':pof,
+                        'pof_2': pof_2, 
                         'R':r,
                         'sum_lambda':sum_lambda,
                         'lambda':lambda_k}
@@ -355,27 +427,24 @@ class Asset_Condition():
     def HI_Forecast_Fitt_Function(self,df):
         if len(df)>0:
             #df = df.sort('Date')
-            df = df.sort_values(by=['Date'])
+            df                = df.sort_values(by=['Date'])
             date              =df['Date'].dt.date.values
             self.opt_date     = date[0]-datetime.timedelta(days=365*5)
-            x          =  np.asarray([(x - self.opt_date).days/365 for x in date])
-            y          = df['val_nor'].values
+            x                 =  np.asarray([(x - self.opt_date).days/365.25 for x in date])
+            y                 = df['val_nor'].values
             
-            #x_end      = x[-1]+35                      # Assume 35 years as end of life
             x_end      = x[-1]+35                      # Assume 35 years as end of life
             # Add initial and final contion last values 
             x =  np.concatenate(([0], x, [x_end]))
             y =  np.concatenate(([0], y, [1]))
-            #print(df)
-            #print(x)
-            #print(y)
+
             fit_f   = Fitt_constants_HI(x,y)
         return fit_f
 
 # Eval constion using the fitted function
     def eval_cond_fit_func(self,date):
         #x = (date.date() - self.opt_date).days/365        # Date to eval in years
-        x = (date - self.opt_date).days/365        # Date to eval in years
+        x = (date - self.opt_date).days/365.25        # Date to eval in years
         #print(date)
         #x = (date.date() - self.opt_date).days/365        # Date to eval in years
         y = self.forecast_f(x) 
