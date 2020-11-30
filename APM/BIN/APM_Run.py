@@ -76,4 +76,4 @@ def Generate_Report_Condition(Assets):
 	#	    "Name"      : 'GESTIÓN DE ACTIVOS',
 	#	    "Sub_title" : 'Condición Flota de Activos - ENERCA'
 	#        }
-    Test_Report_AP(report_data,Assets)
+    Test_Report_AP(report_data,Assets,plan_horizonts=years)

@@ -89,7 +89,6 @@ class APM():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def Risk_Index_During_Time(self,Cont,date_beg,n_hours,trail,df_pof=pd.DataFrame()):
-        print(df_pof)
         res = []
 
         for n in range(n_hours):    

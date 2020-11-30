@@ -52,4 +52,4 @@ def Generate_Report_Risk(DF_ACP,DF_sum):
 	#	    "Name"      : 'GESTIÓN DE ACTIVOS',
 	#	    "Sub_title" : 'Criticidad Flota de Activos - ENERCA'
 	#        }
-    Test_Report_AC(report_data,DF_ACP,DF_sum,Years,N)
+    Test_Report_AC(report_data,DF_ACP,DF_sum,years,N)

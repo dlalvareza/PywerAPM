@@ -1,7 +1,7 @@
 from docx import Document
 from docx.shared import Inches
 from docx.shared import RGBColor
-from datetime import datetime
+from datetime import datetime, date
 
 import pandas as pd
 from copy import deepcopy
@@ -23,12 +23,19 @@ from Processing_tools import Report_APM_df as Report_df
 
 file_name = 'RESULTS/X1_REPORTS/X1_Images/fig.png'
 
-def Test_Report_AP(data,assets):
+def Test_Report_AP(data,assets,plan_horizonts=None):
     document = Document('STATIC/APM_General_Report.docx')
     
     document.paragraphs[0].text = data['Name']
     document.paragraphs[1].text = data['Sub_title']
     report_date                 = datetime.date(datetime.now())
+    
+    if plan_horizonts==None:
+        plan_horizonts = [report_date]
+    else:
+        plan_horizonts = [date(x, 12, 31) for x in plan_horizonts]
+        print(plan_horizonts)
+
     document.paragraphs[2].text = str(report_date)
 
     df = Report_df(assets,report_date)
@@ -132,7 +139,8 @@ def Test_Report_AP(data,assets):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
         paragraph = document.add_paragraph()  
         #file_name = 'RESULTS/X1_REPORTS/X1_Images/fig.png'
-        Radar_Plot_by_Asset(asset,[report_date],file_name)
+        #Radar_Plot_by_Asset(asset,[report_date],file_name)
+        Radar_Plot_by_Asset(asset,plan_horizonts,file_name)
         run = paragraph.add_run()
         run.add_picture(file_name, height=Inches(3.5))
 
