@@ -1,0 +1,8 @@
+{	
+	"REG":{
+		"DB_Name": "CASES/02_Wakanda/01_Data/CREG_15_2018.xlsx"
+		},
+	"Cons":{
+		"DB_Name": "CASES/02_Wakanda/01_Data/Operative_Life.json"
+	      }		
+}
