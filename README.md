@@ -1,4 +1,6 @@
-# PywerAP
+# PywerAPM
+PywerAPM is an open library to 
+## 0. Data structure
 
 ## 1. Data structure
 
