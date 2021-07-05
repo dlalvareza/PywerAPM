@@ -26,10 +26,15 @@ def cash_flow(DF,R):
     pv              = df.PV.sum()
     return df,pv 
 
-def Compute_Ri_Df(asset,df,date_beg,d_day_for):
+def Compute_Ri_Df(asset,df,date_beg,d_day_for,Cr_Fixed):
+
+
     df_con         = asset.POF_R_Assessment(date_beg,d_day_for*24)
     df_con['Date'] = pd.to_datetime(df_con['Date'])
     
+    #if df.empty: # Check if montecarlo simulation is provided
+    #    df['Date'] = df_con['Date']
+
     RI_df         = pd.DataFrame()
     N_years       = int(d_day_for/365.25+1)
     dti           = pd.date_range(date_beg, periods=N_years, freq='Y')
@@ -38,17 +43,24 @@ def Compute_Ri_Df(asset,df,date_beg,d_day_for):
     cr            = [] 
     pof           = []
     for date in dti:
-        df_by_month     = Report_ACM_df_Desc(date,df)
+        if df.empty:           # Check if montecarlo simulation are provided
+            df_by_month     = Report_ACM_df_Desc(date,df_con)
+        else: 
+            df_by_month     = Report_ACM_df_Desc(date,df)
+
         df_pof_by_month = Report_ACM_df_Desc(date,df_con)
+
+        cr_temp   = 0
+        if not df.empty:   # Check if montecarlo simulations are provided
+            grouped_df      = df_by_month.groupby("Ite")
+            cr_temp     = grouped_df.sum().Cr.values
+            if cr_temp.size ==0:
+                cr_temp = 0
+            else:    
+                cr_temp = np.sqrt(np.mean(cr_temp**2))*3 # Energy cost
         
-        grouped_df      = df_by_month.groupby("Ite")
-        
-        cr_temp     = grouped_df.sum().Cr.values
-        if cr_temp.size ==0:
-            cr_temp = 0
-        else:    
-            cr_temp = np.sqrt(np.mean(cr_temp**2))
-        
+
+        cr_temp += Cr_Fixed   # Add fixed criticality
         cr.append(-cr_temp)  
     
         l_pof           = df_pof_by_month.POF.mean()
@@ -61,23 +73,24 @@ def Compute_Ri_Df(asset,df,date_beg,d_day_for):
     
     return RI_df,df_con
 
-class Desicion_Making():
-    def __init__(self,ASSETS,DF_ACP):
+class Decision_Making():
+    def __init__(self,ASSETS,DF_ACP=pd.DataFrame(), df_AC_Fixed=pd.DataFrame()):
         self.scenario         = {}
         self.assets           = ASSETS
-        self.df_ACP           = DF_ACP  # Criticality 
+        self.df_ACP           = DF_ACP         # Criticality by montecarlo  
+        self.df_AC_Fixed      = df_AC_Fixed    # Fixed criticality
         self.R                = 0.13   # Discount rate
     
     def run_scenario_base(self):
         self.scenario['Base'] = self.scenario_assessment()
         dic                   = self.scenario['Base']
         # Save result as pkl
-        l_file                = open('RESULTS/Desicion_Making_Base.pkl', 'wb') 
+        l_file                = open('RESULTS/Decision_Making_Base.pkl', 'wb') 
         pickle.dump(dic, l_file) 
         l_file.close()
     
     def load_scenario_base(self):    
-        with open('RESULTS/Desicion_Making_Base.pkl', 'rb') as f:
+        with open('RESULTS/Decision_Making_Base.pkl', 'rb') as f:
             data = pickle.load(f)
             
         self.scenario['Base'] = data
@@ -99,10 +112,26 @@ class Desicion_Making():
                 asset                           = l_assets.Asset_Portfolio[asset_id]
                 asset.decision                  = df_dec  # Update decision
                 asset_name                      = l_assets.Asset_Portfolio_List.loc[asset_id].Name
-                df                              = self.df_ACP[self.df_ACP[asset_name]==True]
-                df                              = df[['Date','Cr','Ite']]
+
+                # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #    
+                df = pd.DataFrame()
+                if not self.df_ACP.empty:
+                    df             = self.df_ACP[self.df_ACP[asset_name]==True]
+                    df             = df[['Date','Cr','Ite']]
+
+                # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #    
+                cr_fixed = 0
+                if not self.df_AC_Fixed.empty:
+                    mttr     = self.df_AC_Fixed.loc[asset_id].MTTR
+                    #print(mttr)
+                    cr       =  self.df_AC_Fixed.loc[asset_id].T_Cr
+                    #cr_fixed = mttr*cr
+                    cr_fixed = cr 
+
+                #df                              = self.df_ACP[self.df_ACP[asset_name]==True]
+                #df                              = df[['Date','Cr','Ite']]
                 
-                RI_df,df_con                    = Compute_Ri_Df(asset,df,self.date_beg,self.N_days)
+                RI_df,df_con                    = Compute_Ri_Df(asset,df,self.date_beg,self.N_days,cr_fixed)
                 
                 # Update cost of the decision 
                 desc                            = asset.decision
@@ -122,10 +151,21 @@ class Desicion_Making():
             for asset_id in l_assets.Asset_Portfolio.keys():
                 asset          = l_assets.Asset_Portfolio[asset_id]
                 asset_name     = l_assets.Asset_Portfolio_List.loc[asset_id].Name
-                df             = self.df_ACP[self.df_ACP[asset_name]==True]
-                df             = df[['Date','Cr','Ite']]
 
-                RI_df,df_con             = Compute_Ri_Df(asset,df,self.date_beg,self.N_days)
+               # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #    
+                df = pd.DataFrame()
+                if not self.df_ACP.empty:
+                    df             = self.df_ACP[self.df_ACP[asset_name]==True]
+                    df             = df[['Date','Cr','Ite']]
+                    
+                cr_fixed = 0
+                if not self.df_AC_Fixed.empty:
+                    mttr     = self.df_AC_Fixed.loc[asset_id].MTTR
+                    cr       =  self.df_AC_Fixed.loc[asset_id].T_Cr
+                    #cr_fixed = mttr*cr 
+                    cr_fixed = cr 
+
+                RI_df,df_con             = Compute_Ri_Df(asset,df,self.date_beg,self.N_days,cr_fixed)
         
                 df_cf,PV                 = cash_flow(RI_df,self.R)
                 df_cf.head()

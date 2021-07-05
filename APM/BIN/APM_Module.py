@@ -19,7 +19,6 @@ import datetime
 from APM_Module_Tools import Fitt_constants_HI,Read_Table
 from APM_Module_Regulatory import APM_Regulatory                    # Import regulatory class
      
-
 # Function to allocate asset list
 def Read_Table_Conditions(DB_name,table,row,ID,source_type='Excel'):
     if source_type=='Excel':
@@ -30,7 +29,6 @@ def Read_Table_Conditions(DB_name,table,row,ID,source_type='Excel'):
         df            = df.rename(columns = {row:'Val'})
         df            = df.dropna()
     return df
-
 # Function to allocate asset data
 def Read_Asset_Data(DB_name,table,ID,source_type='Excel'):
     if source_type=='Excel':
@@ -43,12 +41,16 @@ def Load_Asset_Portfolio(file,table):
     df            = df.set_index('ID')
     return df
 
-
 class APM():
     def __init__(self,case_sett,load_growth):
         
+        if 'path' in case_sett.keys():
+            self.case_path  =  case_sett['path']
+        else:
+            self.case_path   = ''     
         # Asset porfolio source
         source = case_sett['portfolio_source']
+        
 
         self.Asset_Portfolio_List = Load_Asset_Portfolio(source,'ASSETS')
         self.Asset_Location       = Load_Asset_Portfolio(source,'LOCATIONS')
@@ -57,7 +59,7 @@ class APM():
         #db_structure = case_sett['database_sett']
         for id,row in self.Asset_Portfolio_List.iterrows():
             #asset[id] = Asset_M(row,id,db_structure)
-            asset[id] = Asset_M(row,id,case_sett)
+            asset[id] = Asset_M(row,id,case_sett,self.case_path)
         self.Asset_Portfolio = asset
         self.load_growth     = load_growth
 
@@ -87,7 +89,6 @@ class APM():
         return fail    
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
     def Risk_Index_During_Time(self,Cont,date_beg,n_hours,trail,df_pof=pd.DataFrame()):
         res = []
 
@@ -139,11 +140,9 @@ class APM():
 #                       Eval HI without data                                #         
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 def HI_Replace():
-    #x       =  np.concatenate(([0], ,[35]))
-    #y       =  np.concatenate(([0], , [1]))
-    x        = np.array([0,10,25,35])
-    y        = np.array([0,0.1,0.5,0.99])
-    fit_f   = Fitt_constants_HI(x,y)
+    x        = np.array([0,20,25,45])
+    y        = np.array([0,0.1,0.35,0.99])
+    fit_f    = Fitt_constants_HI(x,y)
     return fit_f
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -153,9 +152,11 @@ def HI_Replace():
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 class Asset_M():
-    def __init__(self,data,id,db):
+    def __init__(self,data,id,db,path):
         # id -> Asset id
         # db -> dbase structure name
+        self.case_path  =  path
+        
         self.db        = db
         db_struc       = db['database_sett']#db
         
@@ -166,6 +167,9 @@ class Asset_M():
         self.name      = data.Name
         self.type      = data.Type
         self.mttr      = data.MTTR
+        self.inc       = data.Incomes
+        self.capex     = data.CAPEX
+        self.opex      = data.OPEX
         self.fail      = False
         self.time_fail = 0                       # Asset time failed
         #self.oper_date = datetime.date(1980, 1, 1)
@@ -195,10 +199,7 @@ class Asset_M():
 
         self.reset_init()
         # Regulatory conditions
-        #date              = 
         self.apm_reg      = APM_Regulatory(self.db,self.data)
-
-
 
     def reset_init(self):
         # # # # # # # # # # # # # # #
@@ -214,10 +215,8 @@ class Asset_M():
     def Load_Asset_Data(self,Model):
         date_base_name =  Model['DB_Name']
         df = Read_Asset_Data(date_base_name,self.type,self.id)
-        
         dic =  df.to_dict('r') 
         dic = dic[0]
-
         dic['Opt_Year'] = datetime.date(dic['Opt_Year'], 1, 1)
 
         return dic
@@ -252,18 +251,22 @@ class Asset_M():
         return data
 
     def Weights(self):
-        data = Read_Table('APM/DATA/TABLES/Asset_HI_Weights.json')
+        t_name = self.case_path+'APM/DATA/TABLES/Asset_HI_Weights.json' 
+        data = Read_Table(t_name)
         data = data[self.type]
         return data
 
     def Load_Cond_Limits(self):
-        data = Read_Table('APM/DATA/TABLES/Asset_Condition_Limits.json')
+        t_name = self.case_path+'APM/DATA/TABLES/Asset_Condition_Limits.json'
+        data = Read_Table(t_name)
         data = data[self.type]
         return data
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     def Load_Lambda_Constants(self,case='Con_1'):
-        data  = Read_Table('APM/DATA/TABLES/Asset_Lambda_Factors.json')
+        t_name = self.case_path+'APM/DATA/TABLES/Asset_Lambda_Factors.json'    
+        data  = Read_Table(t_name)
+        #data  = Read_Table('APM/DATA/TABLES/Asset_Lambda_Factors.json')
         data  = data[self.type]
         data  = data[case]
         a,b,c = data['a'],data['b'],data['c']
@@ -295,21 +298,14 @@ class Asset_M():
             else:
                 hi  = sum_sw/sum_w               # Weighted Health index
         else:
-            #print('Dave')
-            #print(desc_date)
-            #print(date-desc_date)
             delta_years = (date-desc_date).days/365.25
-            #print(date_years)
             hi = self.hi_rem(delta_years)
 
-        #print(hi)
         self.date_con_eval = date
         return hi
         
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #       
     def HI(self,date,freq='hour',hi=True):
-        #print('Dave 707')
-        #print(self.decision)
         desc_date = None
         if not self.decision.empty:
             desc_date        = self.decision['Date'].values[0]

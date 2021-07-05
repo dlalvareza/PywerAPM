@@ -44,13 +44,9 @@ pkmn_type_colors = ['#78C850',  # Grass
                    ]
 
 
-def Plot_All_Days_Hour_Data(DF,text,S_base=1,TR=True,LN=True,BU=False,day_list=None):
-
-    if day_list==None:
-        day_list = list(calendar.day_name)
-
-    for day in day_list:
-        df    = DF[DF.Day==day]
+#-> # # # # # # # # # # # # # # # # # # # # # # # # # #  # 
+def Plot_Security_Opteration(DATA,DAY,S_base,TR,LN,BU):
+        df    = DATA[DATA.Day==DAY]
         if not BU:
             df     = df[(df.Type != 'BUS')]
         if not TR:
@@ -60,9 +56,30 @@ def Plot_All_Days_Hour_Data(DF,text,S_base=1,TR=True,LN=True,BU=False,day_list=N
 
         x,y,s,c = DF_to_List(df,S_base,BU) 
         l_plot,ax = Plot_Scater(x,y,s,c,BU,LN)
-        Scater_Labels(l_plot,ax,S_base,BU=BU,LN=LN)
+        fig = Scater_Labels(l_plot,ax,S_base,BU=BU,LN=LN)
+        return fig
+        
+def Plot_All_Days_Hour_Data(DF,text,S_base=1,TR=True,LN=True,BU=False,day_list=None):
+
+    if day_list==None:
+        day_list = list(calendar.day_name)
+
+    for day in day_list:
+        #df    = DF[DF.Day==day]
+        #if not BU:
+        #    df     = df[(df.Type != 'BUS')]
+        #if not TR:
+        #    df     = df[(df.Type != 'TR')]
+        #if not LN:
+        #    df     = df[(df.Type != 'LN')]
+
+        #x,y,s,c = DF_to_List(df,S_base,BU) 
+        #l_plot,ax = Plot_Scater(x,y,s,c,BU,LN)
+        #Scater_Labels(l_plot,ax,S_base,BU=BU,LN=LN)
+        fig = Plot_Security_Opteration(DF,day,S_base,TR,LN,z)
         plt.savefig(text+day+'.pdf', bbox_inches = "tight")
         plt.close()
+#-> # # # # # # # # # # # # # # # # # # # # # # # # # #  # 
 
 def DF_to_List(DF,s_base,BU):
     x,y,s,c = [],[],[],[]
@@ -71,19 +88,19 @@ def DF_to_List(DF,s_base,BU):
         x.append(row['Hour'])
         if BU:
             c.append(abs(1-row['Loading']))
-            s.append(0.00001*np.power(row['Loading']*5,10))
+            s.append(0.00001*np.power(row['Loading']*4.75,10))
         else:    
             c.append(row['Loading'])
-            s.append(3*100*row['Load']/s_base)
+            s.append(5*100*row['Load']/s_base)
         #print(s)
     return x,y,s,c
 
 def Plot_Scater(x,y,s,c,BU,LN=True):
-    #fig, ax = plt.subplots()
     from collections import Counter
+    #size_y =  int(len(Counter(y).keys())/4)
     #size_y =  int(len(Counter(y).keys())/2)
-    size_y =  int(len(Counter(y).keys())/4)
-    fig, ax = plt.subplots(figsize=(12,size_y))
+    #fig, ax = plt.subplots(figsize=(10,8))
+    fig, ax = plt.subplots(figsize=(16,9))
 
     if BU:
         #fig, ax = plt.subplots(figsize=(12,12))
@@ -94,32 +111,29 @@ def Plot_Scater(x,y,s,c,BU,LN=True):
     
 def Scater_Labels(plot,ax,s_base,BU=False,LN=False):
     if BU:
-        legend1 = ax.legend(*plot.legend_elements(num=4,fmt=" {x:.2f}"),loc="upper left", title="$|1-U_{k_{pu}}|$",fontsize='x-large')
-        kw = dict(prop="sizes", num=3, color='gray',alpha=0.5, fmt=" {x:.2f}",func=lambda s: np.power(s/0.00001,1/10)/5)
-        ax.legend(*plot.legend_elements(**kw),loc="upper right", title="Voltage-[Pu]",fontsize='x-large')
-        ax.xaxis.set_tick_params(labelsize=18)
-        ax.yaxis.set_tick_params(labelsize=14)
-        ax.set_xlabel('Time - [h]', fontsize=20)
+        legend1 = ax.legend(*plot.legend_elements(num=4,fmt=" {x:.2f}"),loc="upper left", title="$|1-U_{k_{pu}}|$",fontsize=16)
+        kw = dict(prop="sizes", num=3, color='gray',alpha=0.5, fmt=" {x:.2f}",func=lambda s: np.power(s/0.00001,1/10)/4.75)
+        ax.legend(*plot.legend_elements(**kw),loc="upper right", title="Voltage-[Pu]",fontsize=16)
+        #ax.xaxis.set_tick_params(labelsize=18)
+        ax.xaxis.set_tick_params(labelsize=10)
+        ax.yaxis.set_tick_params(labelsize=10)
+        ax.set_xlabel('Time - [h]', fontsize=16)
     else:
-        legend1 = ax.legend(*plot.legend_elements(num=4),loc="upper left", title="Loading-[%]",fontsize='x-large')
-        kw = dict(prop="sizes", num=4, color='gray',alpha=0.5, fmt=" {x:.1f}",func=lambda s: s*s_base/(100*3))
-        ax.legend(*plot.legend_elements(**kw),loc="upper right", title="Load-[MVA]",fontsize='x-large')
-        ax.yaxis.set_tick_params(labelsize=18)
-        ax.set_xlabel('Time - [h]', fontsize=18)
+        legend1 = ax.legend(*plot.legend_elements(num=4),loc="upper left", title="Loading-[%]",fontsize=16)
+        kw = dict(prop="sizes", num=4, color='gray',alpha=0.5, fmt=" {x:.1f}",func=lambda s: s*s_base/(100*5))
+        ax.legend(*plot.legend_elements(**kw),loc="upper right", title="Load-[MVA]",fontsize=16)
+        #ax.yaxis.set_tick_params(labelsize=18)
+        ax.yaxis.set_tick_params(labelsize=10)
+        ax.set_xlabel('Time - [h]', fontsize=16)
         #if LN:
-        ax.xaxis.set_tick_params(labelsize=18)
+        ax.xaxis.set_tick_params(labelsize=10)
     ax.add_artist(legend1)
     
-    
-
-def Plot_Stack(DF,text,day_list=None):
-
-    if day_list==None:
-        day_list = list(calendar.day_name)
-
-    for day in day_list:
-        fig, ax = plt.subplots(figsize=(8,5))
-        df       = DF[DF.Day==day]
+#-> # # # # # # # # # # # # # # # # # # # # # # # # # #  #     
+def Plot_Stack_By_Day(DATA,DAY):
+        #fig, ax = plt.subplots(figsize=(8,5))
+        fig, ax = plt.subplots(figsize=(16,9))
+        df       = DATA[DATA.Day==DAY]
         df       = df.drop(columns="Day")
         df_pivot = df.pivot(index='Hour', columns='Name', values='Load')
         df_pivot.plot.area(ax=ax)
@@ -129,8 +143,30 @@ def Plot_Stack(DF,text,day_list=None):
         ax.xaxis.set_tick_params(labelsize=14)
         ax.yaxis.set_tick_params(labelsize=12)
         plt.xlim(0,df['Hour'].max())
+        return fig
+        
+def Plot_Stack(DF,text,day_list=None):
+
+    if day_list==None:
+        day_list = list(calendar.day_name)
+
+    for day in day_list:
+        #fig, ax = plt.subplots(figsize=(8,5))
+        #df       = DF[DF.Day==day]
+        #df       = df.drop(columns="Day")
+        #df_pivot = df.pivot(index='Hour', columns='Name', values='Load')
+        #df_pivot.plot.area(ax=ax)
+        #ax.legend(loc='lower center', ncol=7, bbox_to_anchor=(0.5, 1), fontsize='x-small')
+        #ax.set(ylabel='Load - [MVA]')
+        #ax.set_xlabel('Time - [h]', fontsize=16)
+        #ax.xaxis.set_tick_params(labelsize=14)
+        #ax.yaxis.set_tick_params(labelsize=12)
+        #plt.xlim(0,df['Hour'].max())
+        fig = Plot_Stack_By_Day(DF,day)
         plt.savefig(text+day+'_Load.pdf', bbox_inches = "tight")
         plt.close()
+
+#-> # # # # # # # # # # # # # # # # # # # # # # # # # #  #     
     
 def Plot_Histogram(DF,Asset_List,Type=None):
 
@@ -142,8 +178,6 @@ def Plot_Histogram(DF,Asset_List,Type=None):
 
     print('Test Test')
     asset_port  = ['TR_1', 'TR_2', 'TR_3', 'TR_4', 'TR_5', 'TR_6', 'TR_7', 'TR_8', 'TR_9', 'TR_10', 'TR_11', 'TR_12']
-    
-    #->DF.to_csv (r'RESULTS\export_dataframe.csv', index = False, header=True)
     
     data_by_trail = {}
     data_asset_by_trail = {}
@@ -534,7 +568,64 @@ def Plot_Distribution(DF,Asset_List,Type=None):
 #                                                                             #                                         
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def Asset_Condition_by_Type(a_list,Asset,Cond_Name):
+    asset_l = []
+    for n in a_list:
+        l_asset = Asset.Asset_Portfolio[n]
+        if Cond_Name in l_asset.cond.keys():
+            asset_l.append(n)
+    asset_list = asset_l
+    sns.set(style="whitegrid")
+    sns.set_palette(pkmn_type_colors)
 
+    fig, ax = plt.subplots(figsize= [8, 4])            
+
+    x_max = max(Asset.Asset_Portfolio[asset_list[0]].cond[Cond_Name].historic_data.Date.values)
+    x_min = min(Asset.Asset_Portfolio[asset_list[0]].cond[Cond_Name].historic_data.Date.values)
+    y_max = 0
+        
+    for n in asset_list:
+        asset = Asset.Asset_Portfolio[n]
+        df    = asset.cond[Cond_Name].historic_data
+        if y_max<df.Val.max():
+            y_max = df.Val.max()
+        if x_max<df.Date.max():
+            x_max = df.Date.max()
+        if x_min>df.Date.min():
+            x_min = df.Date.min()    
+
+        sns.lineplot(x='Date', y='Val', data=df,label=asset.name,ax=ax)
+ 
+     # Set plot y limits
+    if y_max<max(asset.cond[Cond_Name].limits):
+        y_max = max(asset.cond[Cond_Name].limits)
+
+    y_min =   min(asset.cond[Cond_Name].limits) 
+
+    # Print condition limits
+    n_con_eval = range(len(asset.cond[Cond_Name].limits)-1)
+    for n in n_con_eval:
+        y1 = asset.cond[Cond_Name].limits[n]
+        y2 = asset.cond[Cond_Name].limits[n+1]
+        # Check color limits
+        if n==0:
+            if y1>y2:
+                if y1<y_max:
+                    y1 = y_max
+        if n==n_con_eval[-1]:
+            if y2>y1:
+                if y2<y_max:
+                    y2 = y_max
+
+        ax.axhspan(y1, y2 ,facecolor=color_limits[n], alpha=0.2)
+
+    
+    ax.set(ylabel=Cond_Name)
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlim(x_min, x_max)
+    ax.legend(loc='lower center', ncol=6, bbox_to_anchor=(0.5, 1), fontsize='small')
+                   
+    return fig
 def Plot_Asset_Condition_Assessment(Asset,Type=None,Cond_Name='TDCG'):
     df = Asset.Asset_Portfolio_List
     if Type==None:
@@ -545,7 +636,7 @@ def Plot_Asset_Condition_Assessment(Asset,Type=None,Cond_Name='TDCG'):
     asset_list = list(asset_list.index)
 
     # Check if the condition exist or it is available  
-    asset_l = []
+    '''asset_l = []
     for n in asset_list:
         asset = Asset.Asset_Portfolio[n]
         if Cond_Name in asset.cond.keys():
@@ -605,8 +696,9 @@ def Plot_Asset_Condition_Assessment(Asset,Type=None,Cond_Name='TDCG'):
     
     ax.set_ylim(y_min, y_max)
     ax.set_xlim(x_min, x_max)
-    ax.legend(loc='lower center', ncol=6, bbox_to_anchor=(0.5, 1), fontsize='small')
-    plt.savefig('RESULTS/'+Cond_Name+'_Consdition_Trend.pdf', bbox_inches = "tight")
+    ax.legend(loc='lower center', ncol=6, bbox_to_anchor=(0.5, 1), fontsize='small')'''
+    fig = Asset_Condition_by_Type(asset_list,Asset,Cond_Name)
+    plt.savefig('RESULTS/'+Cond_Name+'_Condition_Trend.pdf', bbox_inches = "tight")
     plt.close()
         
 
@@ -663,7 +755,7 @@ def Histotical_HI_PLot(Assets,date,n_hours,plot_list):
 #                        Radar plot                           #
 #                                                             # 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-def Radar_Plot_by_Asset(asset,date,path):
+def Radar_Plot_by_Asset(asset,date):
         df    =  pd.DataFrame()
         for dat in date:
             temp_cond = {}
@@ -673,9 +765,8 @@ def Radar_Plot_by_Asset(asset,date,path):
             df_new    = pd.DataFrame.from_dict(temp_cond, orient='index',columns=[str(dat.year)])
             df = pd.concat([df, df_new], axis=1, sort=False)
  
-        ax = Radar_Plot(df)         # Radar plot
-        plt.savefig(path, bbox_inches = "tight")
-        plt.close()
+        #ax = Radar_Plot(df)         # Radar plot
+        return Radar_Plot(df)        
 
 def Radar_Plot_Asset_Condition_Assessment(Asset,date,Type='TR'):
     df         = Asset.Asset_Portfolio_List
@@ -684,22 +775,13 @@ def Radar_Plot_Asset_Condition_Assessment(Asset,date,Type='TR'):
     for n in asset_list:     
         asset = Asset.Asset_Portfolio[n]
         path = 'RESULTS/'+str(asset.name)+'_Condition_Radart.pdf'
-        Radar_Plot_by_Asset(asset,date,path)
-        #df    =  pd.DataFrame()
-        #for dat in date:
-        #    temp_cond = {}
-        #    for con_Id in asset.cond:
-        #        cond_fore = asset.cond[con_Id].eval_cond_fit_func(dat)
-        #        temp_cond[con_Id]= cond_fore
-        #    df_new    = pd.DataFrame.from_dict(temp_cond, orient='index',columns=[str(dat.year)])
-        #    df = pd.concat([df, df_new], axis=1, sort=False)
- 
-        #ax = Radar_Plot(df)         # Radar plot
-        #plt.savefig('RESULTS/'+str(asset.name)+'_Condition_Radart.pdf', bbox_inches = "tight")
-        #plt.close()
+        fig = Radar_Plot_by_Asset(asset,date)
+        plt.savefig(path, bbox_inches = "tight")
+        plt.close()
 
+# -> # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Historical health condition plot 
-def HI_Radar_Plot(Asset_Data,date_period,Type='TR'):
+def HI_Radar_Plot_I(Asset_Data,date_period,Type='TR'):
     hi_hist_dic         = {}
     hi_hist_dic['Year'] = [date.year for date in date_period]
 
@@ -714,19 +796,23 @@ def HI_Radar_Plot(Asset_Data,date_period,Type='TR'):
     df          = pd.DataFrame.from_dict(hi_hist_dic)
     df          = df.set_index('Year')
     df          = df.T
-    ax          = Radar_Plot(df) 
+    return Radar_Plot(df) 
+    
+def HI_Radar_Plot(Asset_Data,date_period,Type='TR'):
+
+    fig = HI_Radar_Plot_I(Asset_Data,date_period,Type='TR')
     plt.savefig('RESULTS/HI_Asset_Fleet_Radar.pdf', bbox_inches = "tight")
     plt.close()
 
+# -> # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
 # Historical POF condition plot 
-def POF_Radar_Plot(Asset_Data,N_hours,date_period,date_beg,Type='TR'):
+def POF_Radar_Plot_I(Asset_Data,N_hours,date_period,date_beg,Type='TR'):
     pof_hist_dic         = {}
     pof_hist_dic['Year'] = [date.year for date in date_period]
 
     for asset_id in list(Asset_Data.Asset_Portfolio_List.index):
         asset = Asset_Data.Asset_Portfolio[asset_id]
         df       = asset.POF_R_Assessment(date_beg,N_hours)
-
         pof_hist = []
         for date in date_period:
             pof_hist.append(df[df.Date==date].POF.values[0]/100)
@@ -735,7 +821,12 @@ def POF_Radar_Plot(Asset_Data,N_hours,date_period,date_beg,Type='TR'):
     df          = pd.DataFrame.from_dict(pof_hist_dic)
     df          = df.set_index('Year')
     df          = df.T
-    ax          = Radar_Plot(df) 
+    return Radar_Plot(df) 
+
+
+
+def POF_Radar_Plot(Asset_Data,N_hours,date_period,date_beg,Type='TR'):    
+    fig =  POF_Radar_Plot_I(Asset_Data,N_hours,date_period,date_beg,Type='TR')
     plt.savefig('RESULTS/POF_Asset_Fleet_Radar.pdf', bbox_inches = "tight")
     plt.close()
 
@@ -795,7 +886,23 @@ def plot_historic_condition_by_asset(asset,path):
     plt.close()
 
 
+def Pie_Plot_Asset_Cr(data,path):
+    
+    sns.set(style="darkgrid")
+    Cr_fin = data.Cr_Fin.values[0]  
+    Cr_Env = data.Cr_Env.values[0]  
+    Cr_Sec = data.Cr_Sec.values[0]  
+    
+    labels = 'Financiero', 'Ambiental', 'Seguridad'
+    sizes = [Cr_fin, Cr_Env, Cr_Sec]
 
+    f, ax = plt.subplots(figsize= [8, 4])
+    ax.pie(sizes, labels=labels, autopct='%1.1f%%',shadow=True, startangle=90)
+    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+    plt.savefig(path, bbox_inches = "tight")
+    plt.close()
+    
 # Plot reports 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 def f_risk_aversion(DF,Years,file,Factor='GWh'):

@@ -9,7 +9,6 @@
 
 
 
-#from PywerAPM_Case_Setting import asset_portfolio_source, file_tags,net_file,date_beg,load_growth,h_end,case_settings,report_data 
 from PywerAPM_Case_Setting import*
 
 
@@ -38,18 +37,26 @@ def run_criticality():
     store.close()
 
 
-def load_criticality():    
-    store   = pd.HDFStore(results_path+'Results_ACM.h5')
-    df     = store['df']
-    #date   = store.get_storer('df').attrs['Date']
-    store.close()
+def load_criticality(cr_type='Monte_Carlo',assets=None):      
+    if cr_type == 'Monte_Carlo':               # Load Montecarlo simulations
+        store   = pd.HDFStore(results_path+'Results_ACM.h5')
+        df     = store['df']
+        store.close()
+    else:                         # Fixed conditios
+        df  = assets.copy()
+        df_type  = {}
+        df_group = assets.groupby(['Disc_Type'])
+        for group in df_group:              # Read criticality by type of asset 
+            name = group[0]
+            #df_type[name]        = pd.read_excel(cr_type, sheet_name=name,usecols = "A:H")
+            df_type       = pd.read_excel(cr_type, sheet_name=name,usecols = "A:H")
+            for index, row in df_type.iterrows(): 
+                df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Fin','Cr_Opt','Cr_Env','Cr_Sec']] = [row.FINANCIAL,row.OPERATIVE,row.ENVIRONMENTAL,row.SECURITY]
+        # Total criticality
+        df['T_Cr'] = df['Cr_Fin']+df['Cr_Opt']+df['Cr_Env']+df['Cr_Sec'] 
     return df
 
 # Generate condition report
 def Generate_Report_Risk(DF_ACP,DF_sum):
     from  R1_Reports import Test_Report_AC
-    #report_data = {
-	#	    "Name"      : 'GESTIÓN DE ACTIVOS',
-	#	    "Sub_title" : 'Criticidad Flota de Activos - ENERCA'
-	#        }
     Test_Report_AC(report_data,DF_ACP,DF_sum,years,N)

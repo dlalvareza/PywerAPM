@@ -11,16 +11,14 @@
 
 import pandapower as pp
 import pandas as pd
-import numpy as np
+#import numpy as np
 
 import copy
 import calendar
 from time import time
 import datetime
-
 from inspyred import ec
 import inspyred
-
 import math
 from random import Random
 
@@ -34,9 +32,34 @@ def Load_Growth_By_Day(L_growth):
 
         return  f_Load_Daily_Growth  
 
-# Function for get the contingency analysis    
-def ContingencyAnalysis(Netw):
+# Risk assessment 
+def Power_Risk_assessment(net,secure=1):
+    assessment                     = {}
+    load                           = net.res_load['p_mw'].fillna(0)*secure    
+
+    assessment['Load']             = pd.DataFrame(
+                                                  {'name':net.load.name,
+                                                  'ENS':net.load['p_mw'] - load,
+                                                  'ES': load})
+    assessment['T_ES']             = load.sum()
+    gen_name                       =  pd.concat([net.sgen.name, net.storage.name,net.ext_grid.name], ignore_index=True)
+    p_gen                          =  pd.concat([net.res_sgen.p_mw, net.res_storage.p_mw,net.res_ext_grid.p_mw], ignore_index=True)
+    p_gen                          = p_gen.fillna(0)*secure
     
+    net.res_sgen['Type']           = 'D_Gen'
+    net.res_storage['Type']        = 'Storage'
+    net.res_ext_grid['Type']       = 'External'
+    p_source                       = pd.concat([net.res_sgen.Type, net.res_storage.Type,net.res_ext_grid.Type], ignore_index=True)
+    
+    assessment['Gen']              = pd.DataFrame(
+                                                  {'name':gen_name,
+                                                   'source': p_source,
+                                                   'gen':p_gen})
+    assessment['purchased_E']      = secure*net.res_ext_grid['p_mw'].values
+    return assessment
+
+# Function for get the contingency analysis    
+def ContingencyAnalysis(Netw):    
     OverloadLines   =[]
     OverLoadTrafos  =[]
     OverVoltageBuses=[]
@@ -77,8 +100,7 @@ def ContingencyAnalysis(Netw):
                            'Type': 'LN',
                            'Serial': '2',
                            'Mag': loadingl/100}
-            OverloadLines.append(temp_data)
-            
+            OverloadLines.append(temp_data)            
     # Set a variable which have the results of all elements
     AllOverloads=OverVoltageBuses+OverloadLines+OverLoadTrafos
     df         =pd.DataFrame(AllOverloads)
@@ -104,69 +126,62 @@ def Load_Net_Pandapower(data_file,pp_case=None):
             for index, row in net.load.iterrows():
                 load_name.append('load_'+str(row.bus)) 
                 s_val.append(math.sqrt(row.p_mw**2+row.q_mvar**2))
-
             net.load.name   = load_name
             net.load.sn_mva = load_name   
-            
             line_name =  []         
             for index, row in net.line.iterrows():
                 line_name.append('line_'+str(row.from_bus)+'_'+str(row.to_bus)) 
             
             net.line.name   = line_name
-
-        #index = net.switch.loc[net.switch['name'] == 'S1'].index[0]
-        #net.switch.closed[index] = True                             # Is assumed that switch is closed by defaut
     else: 
-        # Import network data using excel 
-        data          = pd.read_excel(open(data_file, 'rb'), sheet_name='DATA')
-        # Create Network
-        net           = pp.create_empty_network(name = data.loc[0,'Name'],f_hz =data.loc[0,'f'],sn_mva=data.loc[0,'sb_mva'])
-        # # # # # # # # # # # # # # # # # # Load elements # # # # # # # # # # #
-        # Buses
-        net.bus       = pd.read_excel(open(data_file, 'rb'), sheet_name='BUS')
-        # Lines
-        net.line      = pd.read_excel(open(data_file, 'rb'), sheet_name='LINE')
-        # Load
-        net.load      = pd.read_excel(open(data_file, 'rb'), sheet_name='LOAD')
+        if pp_case=='json':
+            net = pp.from_json(data_file)
+        else:
+	        # Import network data using excel 
+	        data          = pd.read_excel(open(data_file, 'rb'), sheet_name='DATA')
+	        # Create Network
+	        net           = pp.create_empty_network(name = data.loc[0,'Name'],f_hz =data.loc[0,'f'],sn_mva=data.loc[0,'sb_mva'])
+	        # # # # # # # # # # # # # # # # # # Load elements # # # # # # # # # # #
+	        # Buses
+	        net.bus       = pd.read_excel(open(data_file, 'rb'), sheet_name='BUS')
+	        # Lines
+	        net.line      = pd.read_excel(open(data_file, 'rb'), sheet_name='LINE')
+	        # Load
+	        net.load      = pd.read_excel(open(data_file, 'rb'), sheet_name='LOAD')
+	        # External grid
+	        df = pd.read_excel(open(data_file, 'rb'), sheet_name='EXT_GRID')
+	        if not df.empty:
+	            net.ext_grid         = df
+	        # Generators 
+	        df = pd.read_excel(open(data_file, 'rb'), sheet_name='GEN')
+	        if not df.empty:
+	            net.gen           = df
+	        # Static generators 
+	        df = pd.read_excel(open(data_file, 'rb'), sheet_name='SGEN')
+	        if not df.empty:
+	            net.sgen           = df    
+	        # Transformers 
+	        df = pd.read_excel(open(data_file, 'rb'), sheet_name='TRAFO')
+	        if not df.empty:
+	            net.trafo         = df    
+	        # 3 winding transformer
+	        df = pd.read_excel(open(data_file, 'rb'), sheet_name='TRAFO3W')
+	        if not df.empty:
+	            net.trafo3w  = df
+	        # SWITCHES 
+	        df = pd.read_excel(open(data_file, 'rb'), sheet_name='SWITCH')
+	        if not df.empty:
+	            net.switch         = df
+	        # Shunt element
+	        df = pd.read_excel(open(data_file, 'rb'), sheet_name='SHUNT')
+	        if not df.empty:
+	            net.shunt          = df
     
-        # External grid
-        df = pd.read_excel(open(data_file, 'rb'), sheet_name='EXT_GRID')
-        if not df.empty:
-            net.ext_grid         = df
-        # Generators 
-        df = pd.read_excel(open(data_file, 'rb'), sheet_name='GEN')
-        if not df.empty:
-            net.gen           = df
-        # Static generators 
-        df = pd.read_excel(open(data_file, 'rb'), sheet_name='SGEN')
-        if not df.empty:
-            net.sgen           = df    
-        # Transformers 
-        df = pd.read_excel(open(data_file, 'rb'), sheet_name='TRAFO')
-        if not df.empty:
-            net.trafo         = df    
-
-        # 3 winding transformer
-        df = pd.read_excel(open(data_file, 'rb'), sheet_name='TRAFO3W')
-        if not df.empty:
-            net.trafo3w  = df
-        
-        # SWITCHES 
-        df = pd.read_excel(open(data_file, 'rb'), sheet_name='SWITCH')
-        if not df.empty:
-            net.switch         = df
-
-        # Shunt element
-        df = pd.read_excel(open(data_file, 'rb'), sheet_name='SHUNT')
-        if not df.empty:
-            net.shunt          = df
-    # Return network        
-    return (net)
+    return net # Return network        
 
 # Function to load forecatings
 def Forecating_Data(net_lf,file,today):
     from Load_Historic_Load import Load_Historical_Data  
-  
     
     data            = pd.read_excel(open(file, 'rb'), sheet_name='LOAD_TAGS') # Sheet with loads  tags
     data            = data.set_index('Name')
@@ -196,7 +211,6 @@ def Forecating_Data(net_lf,file,today):
         df                  = pd.concat([df,df_by_load],sort=True)
     return df
 
-
 # Function to load forecatings
 def Fourier_Fit(file):
     from Load_Historic_Load import Load_Historical_Data  
@@ -210,17 +224,13 @@ def Fourier_Fit(file):
     df              = pd.DataFrame(columns=df_col_name)
     df_by_load      = pd.DataFrame()
 
-    for loads in data.index:                                   # Forecast model for each load
-        tag         = data.loc[loads]['TAG']                   # Tag ID
-        base        = data.loc[loads]['Base']                  # Power base
-        hist_data   = Load_Historical_Data(tag,base)           # Load historical data
-        #print(hist_data)
-        for day in list(calendar.day_name):                    # Eval each week day
-            day_data    = hist_data.days[day]                       # Day to analize
-            #print(day_data)
-            #coef        = day_data.Filt.fitt.coef_hat              # Fitting coeficients
+    for loads in data.index:                                       # Forecast model for each load
+        tag         = data.loc[loads]['TAG']                       # Tag ID
+        base        = data.loc[loads]['Base']                      # Power base
+        hist_data   = Load_Historical_Data(tag,base)               # Load historical data
+        for day in list(calendar.day_name):                        # Eval each week day
+            day_data    = hist_data.days[day]                      # Day to analize
             f_forecast  = day_data.Filt.fitt.Load_Forecast_by_Day  # Function fitted
-        
             # Load forecasting        
             l_t0        = day_data.i_rms[-1][0]                    # Initial load, at time 0
             load_forec  = f_forecast(l_t0,1)                       # Load forecasting result
@@ -239,8 +249,8 @@ def Make_Asset_List(file):
     return df
 
 # Function to allocate asset list
-def User_Data_List(file):
-    df            = pd.read_excel(open(file, 'rb'), sheet_name='LOAD_TAGS') # Sheet with loads  tags
+def User_Data_List(file,sheet='LOAD_TAGS'):
+    df            = pd.read_excel(open(file, 'rb'), sheet_name=sheet) # Sheet with loads  tags
     df            = df.set_index('Name')
     df            = df.drop(columns=['TAG', 'Base'])
     return df
@@ -257,40 +267,55 @@ class Real_Time_Contingencies:
             self.load_forecast      = Fourier_Fit(ID_Load_Tag_File)
             self.asset_list         = Make_Asset_List(ID_Load_Tag_File)
             self.load_user          = User_Data_List(ID_Load_Tag_File)                        # Users data by load
+            self.gen_data           = User_Data_List(ID_Load_Tag_File,sheet='GEN_TAGS')       # Generation data
             self.N_Users            = self.load_user['N_Users'].sum()
         except:
             self.cont_df          = pd.DataFrame()
             print('Error running contingencies') 
-
-# Function for disconnect Assets from the system
-    def Disconet_Asset(self,net,Asset_id, Service=False):
-        #Asset_type = self.asset_list.loc[Asset_id].Type
-        Asset_type    = self.asset_list.loc[Asset_id].Disc_Type
+# Network during the the contingecy
+    def Net_Configurarion_during_Contingency(self,net,Asset_id, Service=False):
+        print(self.asset_list.loc[Asset_id])
+        asset_type    = self.asset_list.loc[Asset_id].Element_Type
+        asset_to_disc = self.asset_list.loc[Asset_id].Element_Name
+        net_lf         = copy.deepcopy(net)        
+        if not asset_type != asset_type:  # Check if a decision is perfromed
+            net_lf = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
+        asset_type    = self.asset_list.loc[Asset_id].Disc_Type
         asset_to_disc = self.asset_list.loc[Asset_id].Asset_To_Disconet
-        net_lf     = copy.deepcopy(net)
+        net_lf        = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
 
+        return net_lf 
+# Function for disconnect Assets from the system
+    def Disconet_Asset(self,net,Asset_type,Asset_to_disc, Service=False):    
+    #->def Disconet_Asset(self,net,Asset_id, Service=False):        
+        #Asset_type    = self.asset_list.loc[Asset_id].Disc_Type
+        #asset_to_disc = self.asset_list.loc[Asset_id].Asset_To_Disconet
+        net_lf         = copy.deepcopy(net)
 
-        # Disconnect Transformers
-        if Asset_type=='TR':
-            #index = net_lf.trafo.loc[net_lf.trafo['name'] == Asset_id].index[0]
-            index = net_lf.trafo.loc[net_lf.trafo['name'] == asset_to_disc].index[0]
+        if Asset_type=='GEN': # Disconnect Generators
+            index = net_lf.sgen.loc[net_lf.sgen['name'] == Asset_to_disc].index[0]
+            net_lf.sgen.in_service[index] = Service
+        elif Asset_type=='TR': # Disconnect Transformers
+            index = net_lf.trafo.loc[net_lf.trafo['name'] == Asset_to_disc].index[0]
             net_lf.trafo.in_service[index] = Service
-        # Disconnect Lines     
-        elif Asset_type=='LN':
-            #index = net_lf.line.loc[net_lf.line['name'] == Asset_id].index[0]
-            index = net_lf.line.loc[net_lf.line['name'] == asset_to_disc].index[0]
+        elif Asset_type=='LN':         # Disconnect Lines     
+            index = net_lf.line.loc[net_lf.line['name'] == Asset_to_disc].index[0]
             net_lf.line.in_service[index] = Service       
         elif Asset_type=='SW':
-            #index = net_lf.switch.loc[net.switch['name'] == Asset_id].index[0]
-            index = net_lf.switch.loc[net.switch['name'] == asset_to_disc].index[0]
-            net_lf.switch.closed[index]   = Service 
+            index = net_lf.switch.loc[net.switch['name'] == Asset_to_disc].index[0]
+            net_lf.switch.closed[index]   = not Service 
         elif Asset_type=='LO':
-            #index = net_lf.load.loc[net.load['name'] == Asset_id].index[0]
-            index = net_lf.load.loc[net.load['name'] == asset_to_disc].index[0]
+            index = net_lf.load.loc[net.load['name'] == Asset_to_disc].index[0]
             net_lf.load.in_service[index] = Service 
-
+        elif Asset_type=='BUS':
+            index = net_lf.bus.loc[net.bus['name'] == Asset_to_disc].index[0]
+            net_lf.bus.in_service[index] = Service
+        elif Asset_type=='ST':
+            index = net_lf.storage.loc[net.storage['name'] == Asset_to_disc].index[0]
+            net_lf.storage.in_service[index] = Service            
+        else:
+            print('Asset to disconnet does not exist')
         return net_lf
-
 
 # Function to filter forecast data frame
     def Forecast_Val_By_Day_By_Hour(self,Day,Hour):
@@ -299,7 +324,6 @@ class Real_Time_Contingencies:
         df       = df[df.Day==Day]
         df       = df.drop(columns = ['Hour','Day'])
         df       = df.set_index('Name')
-
         return df
 
 #  Sett contingiencies
@@ -321,8 +345,7 @@ class Real_Time_Contingencies:
                 load_factor.append(lf)
           #print(load_factor) 
           cond_new    = (l_net.load['p_mw']*load_factor).sum()
-          cond_base   = l_net.load['p_mw'].sum()
-            
+          cond_base   = l_net.load['p_mw'].sum()            
           # Generation load factor
           g_f         = cond_new/cond_base
           l_net.load['p_mw']       = l_net.load['p_mw']*load_factor
@@ -330,38 +353,41 @@ class Real_Time_Contingencies:
           l_net.gen['p_mw']        = l_net.gen['p_mw']*g_f
               
           return l_net
-
 # Load growth function 
     def Load_Growth_Update(self,growth_rate):
         self.f_growth_rate =  Load_Growth_By_Day(growth_rate)  
 
 # Run Non-Contingencies case
-    def Run_Case_Load_growth(self,net,L_growth,date_beg,hour=0,opt_load_sheeding=False):  
+#->    def Run_Case_Load_growth(self,net,L_growth,date_beg,hour=0,opt_load_sheeding=False):  
+    def Run_Case_Load_growth(self,net,L_growth,hour=0,day=None):  
         ndays          = datetime.timedelta(hours=hour).days
         self.Load_Growth_Update(L_growth)  
         growth_rate    = self.f_growth_rate(ndays)
-        print(growth_rate)
-        return self.Run_Case_Base(net,growth_rate)
-        #print('Dave')
+        return self.Run_Case_Base(net,growth_rate,day_list=day)
 # Run Non-Contingencies case
     def Run_Case_Base(self,net,growth_rate=1,opt_load_sheeding=False,day_list=None):
-        df_sec       = pd.DataFrame()                   # Dataframe that return security margins results
-        df_load      = pd.DataFrame()                   # Dataframe that return security margins results
-        
+        df_sec             = pd.DataFrame()                   # Dataframe that return security margins results
+        df_load            = pd.DataFrame()                   # Dataframe that return the load forecasting
+        cont_assessment    = {}                               # Dataframe with the contigency assessment
+        cr_assessment      = {}                               # Criticality assessment
 
-        df_temp              = pd.DataFrame()
-        df_temp_0            = pd.DataFrame()
         if day_list==None:
             day_list = list(calendar.day_name)
 
         for day in day_list:   # Loop for each day 
-            print(day)
+            cont_assessment_by_hour  = {}                                                  # Contingency assessment by hour
+            cr_assessment_by_hour    = {}                                                  # Criticality assessment by hours
             for hour in range(24):            # Loop for each hour
                 df_load_forecast     = self.Forecast_Val_By_Day_By_Hour(day,hour)       #Load forecast filtered
                 net_lf               = self.Update_Net_With_Load_Forecast(net,df_load_forecast)  # Update network with forecast
                 net_lf.load.scaling  = growth_rate  
-                net_lf.gen.scaling   = growth_rate              
-                pp.runpp(net_lf)                                                                 # Run load flow with pandapower
+                net_lf.gen.scaling   = growth_rate     
+                try:          
+                    pp.runpp(net_lf)                                                                 # Run load flow with pandapower
+                    lf_error = False
+                except:
+                    print('Error running load flow')
+                    lf_error = True
 
                 if opt_load_sheeding:
                     dave = RTC(net_lf)
@@ -370,6 +396,7 @@ class Real_Time_Contingencies:
                 # # # # # # # # # Security margins dataframe  # # # # # # # #
                 # Lines data frame
                 df_temp_0            = pd.DataFrame()
+                
                 df_temp_0['Loading'] = net_lf.res_line['loading_percent']
                 df_temp_0['Load']    = (net_lf.res_line['p_from_mw']**2+net_lf.res_line['q_from_mvar']**2).pow(1./2)
                 df_temp_0['Name']    = net_lf.line['name']
@@ -396,6 +423,9 @@ class Real_Time_Contingencies:
                 # Add to dataframe the day and hour
                 df_temp['Day']       = day
                 df_temp['Hour']      = hour
+                if lf_error:
+                    df_temp['Load']    = 0
+                    df_temp['Loading'] = 0
                 # Final concatenation
                 df_sec                   = pd.concat([df_sec,df_temp],ignore_index=True)
                 
@@ -406,8 +436,25 @@ class Real_Time_Contingencies:
                 df_load_temp['Load']    = (net_lf.res_load['p_mw']**2+net_lf.res_load['q_mvar']**2).pow(1./2)              
                 df_load_temp['Day']     = day
                 df_load_temp['Hour']    = hour
-                df_load                 = pd.concat([df_load,df_load_temp],ignore_index=True)
-        return df_sec,df_load
+                if lf_error:
+                    df_load_temp['Load'] = 0
+
+                df_load                 = pd.concat([df_load,df_load_temp],ignore_index=True)                
+                # Check contingency by hour and update security margins and criticality
+                df_cont                       = ContingencyAnalysis(net_lf)
+                l_security = 0
+                if df_cont.empty:
+                    l_security = 1
+                cont_assessment_by_hour[hour] = df_cont
+                cr_assessment_by_hour[hour]   = Power_Risk_assessment(net_lf,l_security)         
+                
+            cont_assessment[day] = cont_assessment_by_hour  # Update contingency assessmet by day
+            cr_assessment[day]   = cr_assessment_by_hour
+            
+        assessment     = { 'cont'      :cont_assessment,
+                           'cr_energy' :cr_assessment
+                        } 
+        return df_sec,df_load, assessment
 
 # Run load flow
     def Run_Load_Flow(self,net,day,hour,asset_status,growth_rate=1):
@@ -432,7 +479,6 @@ class Real_Time_Contingencies:
             if run_lf:
                 N_Users = self.N_Users
                 try:
-                    #print('Running Flow')
                     pp.runpp(net_lf)                                                        # Run load flow with pandapower
                     df                   = ContingencyAnalysis(net_lf)                      # Check contingencies
 
@@ -443,7 +489,6 @@ class Real_Time_Contingencies:
                     elif load_cut>0:               
                         ENS = load_cut
                         for index, row  in net_lf.load.iterrows():
-                            #print(row)
                             load_name = row['name']
                             p_exp = row.p_mw*row.scaling
                             p_sup = net_lf.res_load.loc[index].p_mw
@@ -463,9 +508,6 @@ class Real_Time_Contingencies:
 #              Optimization of contingencies using PSO                      #
 #                                                                           #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-
 class RTC_inspyred_Settings():
 
     def __init__(self, dimensions=2):

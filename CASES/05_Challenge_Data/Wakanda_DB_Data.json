@@ -1,0 +1,8 @@
+{	
+	"REG":{
+		"DB_Name": "../../../02_Develop/PywerAPM/PywerAPM/CASES/04_Boot_Data/01_Data/CREG_15_2018.xlsx"
+		},
+	"Cons":{
+		"DB_Name": "../../../02_Develop/PywerAPM/PywerAPM/CASES/04_Boot_Data/01_Data/Operative_Life.json"
+	      }		
+}

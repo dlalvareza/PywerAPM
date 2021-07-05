@@ -72,8 +72,4 @@ def load_codition():
 # Generate condition report
 def Generate_Report_Condition(Assets):
     from  R1_Reports import Test_Report_AP
-    #report_data = {
-	#	    "Name"      : 'GESTIÓN DE ACTIVOS',
-	#	    "Sub_title" : 'Condición Flota de Activos - ENERCA'
-	#        }
     Test_Report_AP(report_data,Assets,plan_horizonts=years)

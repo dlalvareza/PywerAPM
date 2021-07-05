@@ -371,7 +371,13 @@ def Plot_HI_Forecast_Stacked(ASSET,TIME):
         df[cond]  = cond_for*w_pu
         n         +=1
     
-    p.varea_stack(stackers=Cond_list, x='date', color=all_palettes['Category20'][n], legend_label=Cond_list, source=df, alpha=0.85)
+    if n<3:
+        color = all_palettes['Category20'][3]
+        color = color[0:n] 
+    else:
+        color = all_palettes['Category20'][n]
+
+    p.varea_stack(stackers=Cond_list, x='date', color=color, legend_label=Cond_list, source=df, alpha=0.85)
     p.legend.items.reverse()
     
     hi            = [ASSET.Eval_Asset_Condition(date) for date in TIME]
@@ -413,9 +419,7 @@ def plot_decision_making(DF):
         fig.vbar(x=dodge('id', x, range=fig.x_range), top='PV', width=0.8*dx, source=l_df,
         color=color[n], legend_label=name)
         n +=1  
-    
     return fig
-    
     
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
