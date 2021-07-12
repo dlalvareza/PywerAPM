@@ -137,7 +137,8 @@ def Plot_Stack_By_Day(DATA,DAY):
         df       = df.drop(columns="Day")
         df_pivot = df.pivot(index='Hour', columns='Name', values='Load')
         df_pivot.plot.area(ax=ax)
-        ax.legend(loc='lower center', ncol=7, bbox_to_anchor=(0.5, 1), fontsize='x-small')
+        #->ax.legend(loc='lower center', ncol=7, bbox_to_anchor=(0.5, 1), fontsize='x-small')
+        ax.legend(loc='lower center', ncol=9, bbox_to_anchor=(0.5, 1))
         ax.set(ylabel='Load - [MVA]')
         ax.set_xlabel('Time - [h]', fontsize=16)
         ax.xaxis.set_tick_params(labelsize=14)
@@ -578,7 +579,8 @@ def Asset_Condition_by_Type(a_list,Asset,Cond_Name):
     sns.set(style="whitegrid")
     sns.set_palette(pkmn_type_colors)
 
-    fig, ax = plt.subplots(figsize= [8, 4])            
+    #fig, ax = plt.subplots(figsize= [8, 4])            
+    fig, ax = plt.subplots(figsize= [16, 9])            
 
     x_max = max(Asset.Asset_Portfolio[asset_list[0]].cond[Cond_Name].historic_data.Date.values)
     x_min = min(Asset.Asset_Portfolio[asset_list[0]].cond[Cond_Name].historic_data.Date.values)
@@ -841,6 +843,8 @@ def Radar_Plot(df):
     sns.set_palette("Set1")
     # Initialise the spider plot
     ax = plt.subplot(polar=True)
+    plt.gcf().set_size_inches(8, 8)
+
 
     # If you want the first axis to be on top:
     ax.set_theta_offset(pi / 2)

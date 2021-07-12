@@ -19,7 +19,7 @@ from Processing_tools import Report_APM_df, Report_APM_Meta_data, Report_ACM_Met
 import pandas as pd
 from datetime import datetime
 
-results_path ='RESULTS/'
+#results_path ='RESULTS/'
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                     Run criticality                       #
@@ -51,9 +51,10 @@ def load_criticality(cr_type='Monte_Carlo',assets=None):
             #df_type[name]        = pd.read_excel(cr_type, sheet_name=name,usecols = "A:H")
             df_type       = pd.read_excel(cr_type, sheet_name=name,usecols = "A:H")
             for index, row in df_type.iterrows(): 
-                df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Fin','Cr_Opt','Cr_Env','Cr_Sec']] = [row.FINANCIAL,row.OPERATIVE,row.ENVIRONMENTAL,row.SECURITY]
+                #df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Fin','Cr_Opt','Cr_Env','Cr_Sec']] = [row.FINANCIAL,row.OPERATIVE,row.ENVIRONMENTAL,row.SECURITY]
+                df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Env','Cr_Sec','Cr_Leg']] = [row.ENVIRONMENTAL,row.SECURITY,row.LEGAL]
         # Total criticality
-        df['T_Cr'] = df['Cr_Fin']+df['Cr_Opt']+df['Cr_Env']+df['Cr_Sec'] 
+        df['T_Cr'] = df['Cr_Env']+df['Cr_Sec']+df['Cr_Leg']+df['Cr_Fin'] 
     return df
 
 # Generate condition report

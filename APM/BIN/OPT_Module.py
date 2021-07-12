@@ -27,7 +27,6 @@ def FR_Function_to_fit(L,lam_0):
 def ROI(pof,inc_vec,Opex,Capex,cr):
     return inc_vec/(cr*pof+Opex+Capex)-1
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 class FR():
     def __init__(self,x,y,l,lam_0):

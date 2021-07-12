@@ -8,21 +8,77 @@
 #     Module inputs:                          #
 #              -> File name                   #
 # # # # # # # # # # # # # # # # # # # # # # # #
-
 import pandapower as pp
 import pandas as pd
-#import numpy as np
+import json
 
 import copy
 import calendar
 from time import time
 import datetime
+
 from inspyred import ec
 import inspyred
 import math
 from random import Random
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+def Disconet_Asset(net,Asset_type,Asset_to_disc, Service=False):    
+        net_lf         = copy.deepcopy(net)
+        if Asset_type=='GEN': # Disconnect Generators
+            index = net_lf.sgen.loc[net_lf.sgen['name'] == Asset_to_disc].index[0]
+            net_lf.sgen.in_service[index] = Service
+        elif Asset_type=='TR': # Disconnect Transformers
+            index = net_lf.trafo.loc[net_lf.trafo['name'] == Asset_to_disc].index[0]
+            net_lf.trafo.in_service[index] = Service
+        elif Asset_type=='LN':         # Disconnect Lines     
+            index = net_lf.line.loc[net_lf.line['name'] == Asset_to_disc].index[0]
+            net_lf.line.in_service[index] = Service       
+        elif Asset_type=='SW':
+            index = net_lf.switch.loc[net.switch['name'] == Asset_to_disc].index[0]
+            net_lf.switch.closed[index]   = not Service 
+        elif Asset_type=='LO':
+            index = net_lf.load.loc[net.load['name'] == Asset_to_disc].index[0]
+            net_lf.load.in_service[index] = Service 
+        elif Asset_type=='BUS':
+            index = net_lf.bus.loc[net.bus['name'] == Asset_to_disc].index[0]
+            net_lf.bus.in_service[index] = Service
+        elif Asset_type=='ST':
+            index = net_lf.storage.loc[net.storage['name'] == Asset_to_disc].index[0]
+            net_lf.storage.in_service[index] = Service            
+        else:
+            print('Asset to disconnet does not exist')
+        return net_lf
+        
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
+def Network_Reconfiguration(net,strategy):
+    net_lf         = copy.deepcopy(net)  
+    for step in strategy: 
+    	l_sequence     = strategy[step]
+    	asset_type     = l_sequence['Element_Type']
+    	asset_to_disc  = l_sequence['Element_Name']
+    	net_lf        = Disconet_Asset(net_lf,asset_type,asset_to_disc)  
+                        
+    return  net_lf  
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
+def Load_Contingency_Strategies(File):
+    with open(File) as json_file:
+        data = json.load(json_file)
+    return  data  
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #  
+def Load_AM_Plan(File):
+    data = Load_Contingency_Strategies(File)
+    #with open(File) as json_file:
+    #    data = json.load(json_file)        
+    df = pd.DataFrame.from_dict(data, orient='index')
+    return  df  
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #        
 # Funtion to return the daily load growth 
 def Load_Growth_By_Day(L_growth):
         daily_growth = pow(1+L_growth, 1/365)-1     # Daily growth rate
@@ -32,18 +88,18 @@ def Load_Growth_By_Day(L_growth):
 
         return  f_Load_Daily_Growth  
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Risk assessment 
 def Power_Risk_assessment(net,secure=1):
     assessment                     = {}
     load                           = net.res_load['p_mw'].fillna(0)*secure    
-
     assessment['Load']             = pd.DataFrame(
                                                   {'name':net.load.name,
                                                   'ENS':net.load['p_mw'] - load,
                                                   'ES': load})
     assessment['T_ES']             = load.sum()
-    gen_name                       =  pd.concat([net.sgen.name, net.storage.name,net.ext_grid.name], ignore_index=True)
-    p_gen                          =  pd.concat([net.res_sgen.p_mw, net.res_storage.p_mw,net.res_ext_grid.p_mw], ignore_index=True)
+    gen_name                       = pd.concat([net.sgen.name, net.storage.name,net.ext_grid.name], ignore_index=True)
+    p_gen                          = pd.concat([net.res_sgen.p_mw, net.res_storage.p_mw,net.res_ext_grid.p_mw], ignore_index=True)
     p_gen                          = p_gen.fillna(0)*secure
     
     net.res_sgen['Type']           = 'D_Gen'
@@ -260,62 +316,48 @@ def User_Data_List(file,sheet='LOAD_TAGS'):
 
 class Real_Time_Contingencies:
 # Main file
-    def __init__(self,data_file,ID_Load_Tag_File,pp_case=None):
+    def __init__(self,data_file,pp_case=None):    
         try:
             # Net data
-            self.net                = Load_Net_Pandapower(data_file,pp_case)
-            self.load_forecast      = Fourier_Fit(ID_Load_Tag_File)
-            self.asset_list         = Make_Asset_List(ID_Load_Tag_File)
-            self.load_user          = User_Data_List(ID_Load_Tag_File)                        # Users data by load
-            self.gen_data           = User_Data_List(ID_Load_Tag_File,sheet='GEN_TAGS')       # Generation data
+            #self.net                = Load_Net_Pandapower(data_file,pp_case)
+            self.net                = Load_Net_Pandapower(data_file['net_file'],pp_case)
+            #self.load_forecast      = Fourier_Fit(ID_Load_Tag_File)
+            #self.asset_list         = Make_Asset_List(ID_Load_Tag_File)
+            #self.load_user          = User_Data_List(ID_Load_Tag_File)                        # Users data by load
+            #self.gen_data           = User_Data_List(ID_Load_Tag_File,sheet='GEN_TAGS')       # Generation data
+            self.load_forecast      = Fourier_Fit(data_file['load_data'])
+            self.asset_list         = Make_Asset_List(data_file['portfolio_source'])
+            self.load_user          = User_Data_List(data_file['load_data'])                        # Users data by load
+            self.gen_data           = User_Data_List(data_file['load_data'],sheet='GEN_TAGS')       # Generation data
+
+            self.Cont_Strategies    = Load_Contingency_Strategies(data_file['cont_stra'])
+            self.AM_Plan            = Load_AM_Plan(data_file['AM_Plan'])
             self.N_Users            = self.load_user['N_Users'].sum()
         except:
             self.cont_df          = pd.DataFrame()
             print('Error running contingencies') 
+            
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #             
 # Network during the the contingecy
     def Net_Configurarion_during_Contingency(self,net,Asset_id, Service=False):
-        print(self.asset_list.loc[Asset_id])
-        asset_type    = self.asset_list.loc[Asset_id].Element_Type
-        asset_to_disc = self.asset_list.loc[Asset_id].Element_Name
         net_lf         = copy.deepcopy(net)        
-        if not asset_type != asset_type:  # Check if a decision is perfromed
-            net_lf = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
+        # Contingency strategy
+        strategy_id = self.asset_list.loc[Asset_id].Strategy
+        if strategy_id in self.Cont_Strategies.keys(): 
+            net_lf = Network_Reconfiguration(net_lf,self.Cont_Strategies[strategy_id])
+
+         
+        #asset_type    = self.asset_list.loc[Asset_id].Element_Type
+        #asset_to_disc = self.asset_list.loc[Asset_id].Element_Name
+        #if not asset_type != asset_type:  # Check if a decision is perfromed
+        #    net_lf = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
+            
         asset_type    = self.asset_list.loc[Asset_id].Disc_Type
         asset_to_disc = self.asset_list.loc[Asset_id].Asset_To_Disconet
-        net_lf        = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
+        #net_lf        = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
+        net_lf        = Disconet_Asset(net_lf,asset_type,asset_to_disc)
 
         return net_lf 
-# Function for disconnect Assets from the system
-    def Disconet_Asset(self,net,Asset_type,Asset_to_disc, Service=False):    
-    #->def Disconet_Asset(self,net,Asset_id, Service=False):        
-        #Asset_type    = self.asset_list.loc[Asset_id].Disc_Type
-        #asset_to_disc = self.asset_list.loc[Asset_id].Asset_To_Disconet
-        net_lf         = copy.deepcopy(net)
-
-        if Asset_type=='GEN': # Disconnect Generators
-            index = net_lf.sgen.loc[net_lf.sgen['name'] == Asset_to_disc].index[0]
-            net_lf.sgen.in_service[index] = Service
-        elif Asset_type=='TR': # Disconnect Transformers
-            index = net_lf.trafo.loc[net_lf.trafo['name'] == Asset_to_disc].index[0]
-            net_lf.trafo.in_service[index] = Service
-        elif Asset_type=='LN':         # Disconnect Lines     
-            index = net_lf.line.loc[net_lf.line['name'] == Asset_to_disc].index[0]
-            net_lf.line.in_service[index] = Service       
-        elif Asset_type=='SW':
-            index = net_lf.switch.loc[net.switch['name'] == Asset_to_disc].index[0]
-            net_lf.switch.closed[index]   = not Service 
-        elif Asset_type=='LO':
-            index = net_lf.load.loc[net.load['name'] == Asset_to_disc].index[0]
-            net_lf.load.in_service[index] = Service 
-        elif Asset_type=='BUS':
-            index = net_lf.bus.loc[net.bus['name'] == Asset_to_disc].index[0]
-            net_lf.bus.in_service[index] = Service
-        elif Asset_type=='ST':
-            index = net_lf.storage.loc[net.storage['name'] == Asset_to_disc].index[0]
-            net_lf.storage.in_service[index] = Service            
-        else:
-            print('Asset to disconnet does not exist')
-        return net_lf
 
 # Function to filter forecast data frame
     def Forecast_Val_By_Day_By_Hour(self,Day,Hour):
@@ -460,18 +502,18 @@ class Real_Time_Contingencies:
     def Run_Load_Flow(self,net,day,hour,asset_status,growth_rate=1):
 
             run_lf = False
-            if True in asset_status.values():                                           # Check if some asset is disconect
-                df_load_forecast     = self.Forecast_Val_By_Day_By_Hour(day,hour)       #Load forecast filtered
+            if True in asset_status.values():                                                    # Check if some asset is disconect
+                df_load_forecast     = self.Forecast_Val_By_Day_By_Hour(day,hour)                #Load forecast filtered
                 net_lf               = self.Update_Net_With_Load_Forecast(net,df_load_forecast)  # Update network with forecast
                 
                 net_lf.load.scaling  = growth_rate  
-                net_lf.gen.scaling   = growth_rate   
+                #->net_lf.gen.scaling   = growth_rate   
 
-
-                for asset in asset_status:                                              # Disconnet assets 
+                for asset in asset_status:                                              # Disconnet assets    	
                     if asset_status[asset] ==True:
                         run_lf               = True
-                        net_lf               = self.Disconet_Asset(net_lf,asset)
+                        #net_lf               = self.Disconet_Asset(net_lf,asset)
+                        net_lf             = self.Net_Configurarion_during_Contingency(net_lf,asset)
             
             df   = pd.DataFrame()                                                       # Empty dataframe
             ENS   = 0
@@ -509,7 +551,6 @@ class Real_Time_Contingencies:
 #                                                                           #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 class RTC_inspyred_Settings():
-
     def __init__(self, dimensions=2):
         self.dimensions = dimensions
         self.bounder = ec.Bounder([0] * dimensions, [1] * dimensions)
@@ -533,7 +574,6 @@ class RTC():
     BUS_Penalty    = 2000
         
     def __init__(self,Net):
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # Run first contingencies # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -634,18 +674,13 @@ def Inspyred_Main(problem,prng=None, display=False):
     ea.topology      = inspyred.swarm.topologies.ring_topology
     final_pop = ea.evolve(generator=problem.generator,
                           evaluator=problem.evaluator,
-                          #evaluator=inspyred.ec.evaluators.parallel_evaluation_mp,                       
-                          #mp_evaluator=problem.evaluator,
-                          #pop_size=50,
                           pop_size=40,
                           bounder=problem.bounder,
                           maximize=problem.maximize,
                           max_evaluations=2000,
-                          #max_evaluations=1000, 
                           neighborhood_size=10)
 
     if display:
         best = max(final_pop) 
         print('Best Solution: \n{0}'.format(str(best)))
-    #return ea
     return max(final_pop) 

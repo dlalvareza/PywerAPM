@@ -1,0 +1,43 @@
+{	
+	"Strategy_1":{
+		"Step_1":{
+			"Element_Type": "SW",
+			"Element_Name": "S1",
+			"SERVICE": "True"
+		}, 
+		"Step_2":{
+			"Element_Type": "SW",
+			"Element_Name": "S3",
+			"SERVICE": "True"
+		},
+		"Step_3":{
+			"Element_Type": "LO",
+			"Element_Name": "Load_R1",
+			"SERVICE": "False"
+		}		
+		},
+    "Strategy_2":{
+		"Step_1":{
+			"Element_Type": "SW",
+			"Element_Name": "S1",
+			"SERVICE": "True"
+		}		
+		},														
+    "Strategy_3":{
+		"Step_1":{
+			"Element_Type": "SW",
+			"Element_Name": "S1",
+			"SERVICE": "True"
+		}, 
+		"Step_2":{
+			"Element_Type": "LN",
+			"Element_Name": "Line_3_4",
+			"SERVICE": "False"
+		},
+		"Step_3":{
+			"Element_Type": "LO",
+			"Element_Name": "Load_R12",
+			"SERVICE": "False"
+		}
+		}		
+}

@@ -74,5 +74,128 @@
 					"Maintenance":        0.5,
 					"Age":       0.5
 					}
+			},
+    "CB":{
+			"CB_HS": {
+					"R_Contact": 1,
+					"Vaccum_Bottle": 4,
+					"Travel_time": 3
+					}										
+	  },
+    "GEN":{
+			"CB_HS": {
+				"Mechanical": 3,
+				"Switchgear": 3,
+				"Foundation": 3
 			}	
+	  },
+    "BAT":{
+			"BAT_HS": {
+				"Charge": 3,
+				"Discharge": 3,
+				"Voltage": 3,
+				"Switchgear": 3,
+				"Impedance": 4
+				}
+	  },
+    "Ambiental":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Bahia":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Baterias":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Captación":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Contadores":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Civiles":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Eléctricos":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Generador":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Incendio":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Instrumentación":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Overhaul":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Por definir":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Protecciones":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Reguladores":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Refrigeración":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Scada":{
+			"HS": {
+					"HS": 1
+					}
+	  },
+    "Seguridad":{
+			"HS": {
+					"HS": 1
+					}
+	 },
+    "Sedimentación":{
+			"HS": {
+					"HS": 1
+					}					
+	  },	  
+    "Túneles":{
+			"HS": {
+					"HS": 1
+					}
+	       },
+    "Turbina y rodete":{
+			"HS": {
+					"HS": 1
+					}					
+	  }	  	  	  	  	  	  	  	  	  	  	  				
 }

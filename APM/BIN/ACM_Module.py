@@ -30,3 +30,8 @@ class ACM():
         df['Gen_Cost']   = DF_Gen['gen']*self.gen_data['Cost']
         df               = df[['Gen_Cost','Gen_Env']]
         return df
+   
+    def Benefit_During_Contingency(self,df_load,df_gen):
+       l_benefit  = df_load['ES_Ben'].sum()-df_load['ENS_Cost'].sum()-df_gen['Gen_Cost'].sum()-df_gen['Gen_Env'].sum()
+       return l_benefit
+   

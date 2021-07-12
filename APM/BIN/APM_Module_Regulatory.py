@@ -19,8 +19,6 @@ class APM_Regulatory():
     def __init__(self,DB,Asset_Data):
 
         l_UC           = Asset_Data['UC']
-
-
         self.db       =   DB
         self.reg_life =  self.Regulatory_life(l_UC)
         #self.reg_EL   = date.year

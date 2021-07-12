@@ -20,8 +20,6 @@ import pandas as pd
 from datetime import datetime
 
 
-results_path ='RESULTS/'
-
 def run_main():
 	# Porfolio assessment 
 	Assets  = APM(case_settings,load_growth)

@@ -1,0 +1,47 @@
+{	
+		"Project_1":{
+			"Asset_Name": "Aux_0",
+			"Des_Type": "Replace",
+			"Date"    : "2027/10/01"
+		}, 
+		"Project_2":{
+			"Asset_Name": "CB_0_1",
+			"Des_Type": "Maintenance",
+			"Date"    : "2023/10/01"
+		},
+		"Project_3":{
+			"Asset_Name": "CB_0_12",
+			"Des_Type": "Maintenance",
+			"Date"    : "2025/01/01"
+		},
+		"Project_4":{
+			"Asset_Name": "TR_0_12",
+			"Des_Type": "Maintenance",
+			"Date": "2030/10/01"
+		},
+		"Project_5":{
+			"Asset_Name": "CB_R1",
+			"Des_Type": "Maintenance",
+			"Date"    : "2027/10/01"
+		},
+		"Project_6":{
+			"Asset_Name": "CB_CI1",
+			"Des_Type": "Maintenance",
+			"Date"    : "2027/10/01"
+		},	
+		"Project_7":{
+			"Asset_Name": "Line_1_2",
+			"Des_Type": "Maintenance",
+			"Date"    : "2026/10/01"
+		},	
+		"Project_8":{
+			"Asset_Name": "Line_7_8",
+			"Des_Type": "Maintenance",
+			"Date"    : "2027/10/01"
+		},												
+		"Project_9":{
+			"Asset_Name": "ST_5",
+			"Des_Type": "Replace",
+			"Date"    : "2032/10/01"
+		}		
+}
