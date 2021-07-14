@@ -11,7 +11,7 @@ h_end                   = 2*24*365                          # Assumed period of 
 n_years                 = 20
 n_days                  = int(n_years*365.25)               # Assumed period of planning 
 n_hours                 = n_days*24
-N                       = 750                               # Monte-Carlo Simulations  
+N                       = 20                               # Monte-Carlo Simulations  
 results_path            = path+'02_Results/'
 test_date_2 = datetime.date(2022, 1, 1)
 test_date_3 = datetime.date(2025, 1, 1)
@@ -31,12 +31,12 @@ case_settings = {
 				}
 
 # Project data
-#report_data = {
-#		"Name"      : 'Wakanda Asset Management',
-#		"Sub_title" : 'APM - Fleet Performance'
-#	}
+report_data = {
+		"Name"      : 'Gestión de activos y principios de inteligencia computacional aplicada al sector eléctrico',
+		"Sub_title" : 'APM - Fleet Performance'
+	}
 
-#years             = [2022,2025,2029,2039,2044]
+years             = [2022,2025,2029,2039,2044]
 #N                 = 750  
 
 #load_growth       = 0.02  

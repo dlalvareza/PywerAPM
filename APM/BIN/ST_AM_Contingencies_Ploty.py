@@ -770,6 +770,13 @@ def Radar_Plot_by_Asset(asset,date):
         #ax = Radar_Plot(df)         # Radar plot
         return Radar_Plot(df)        
 
+def Radar_Plot_by_Asset_save(asset,date,path):
+        #asset = Asset.Asset_Portfolio[n]
+        #path = 'RESULTS/'+str(asset.name)+'_Condition_Radart.pdf'
+        fig = Radar_Plot_by_Asset(asset,date)
+        plt.savefig(path, bbox_inches = "tight")
+        plt.close() 
+        
 def Radar_Plot_Asset_Condition_Assessment(Asset,date,Type='TR'):
     df         = Asset.Asset_Portfolio_List
     asset_list = list(df[df['Type']==Type].index)
@@ -895,10 +902,11 @@ def Pie_Plot_Asset_Cr(data,path):
     sns.set(style="darkgrid")
     Cr_fin = data.Cr_Fin.values[0]  
     Cr_Env = data.Cr_Env.values[0]  
-    Cr_Sec = data.Cr_Sec.values[0]  
-    
-    labels = 'Financiero', 'Ambiental', 'Seguridad'
-    sizes = [Cr_fin, Cr_Env, Cr_Sec]
+    Cr_Sec = data.Cr_Sec.values[0]
+    Cr_Leg = data.Cr_Leg.values[0]  
+    print(data)
+    labels = 'Financiero', 'Ambiental', 'Seguridad', 'Legal'
+    sizes = [Cr_fin, Cr_Env, Cr_Sec, Cr_Leg]
 
     f, ax = plt.subplots(figsize= [8, 4])
     ax.pie(sizes, labels=labels, autopct='%1.1f%%',shadow=True, startangle=90)

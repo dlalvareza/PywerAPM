@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 
-from ST_AM_Contingencies_Ploty import Radar_Plot_by_Asset, plot_historic_condition_by_asset, f_risk_aversion, f_Cr_Hist, f_Risk_Matrix, f_Pareto,f_Pareto_Year
+from ST_AM_Contingencies_Ploty import Radar_Plot_by_Asset_save, plot_historic_condition_by_asset, f_risk_aversion, f_Cr_Hist, f_Risk_Matrix, f_Pareto,f_Pareto_Year
 #from Processing_tools import Report_df
 from Processing_tools import Report_APM_df as Report_df 
 
@@ -140,13 +140,15 @@ def Test_Report_AP(data,assets,plan_horizonts=None):
         paragraph = document.add_paragraph()  
         #file_name = 'RESULTS/X1_REPORTS/X1_Images/fig.png'
         #Radar_Plot_by_Asset(asset,[report_date],file_name)
-        Radar_Plot_by_Asset(asset,plan_horizonts,file_name)
+        #Radar_Plot_by_Asset(asset,plan_horizonts,file_name)
+        Radar_Plot_by_Asset_save(asset,plan_horizonts,file_name)
         run = paragraph.add_run()
         run.add_picture(file_name, height=Inches(3.5))
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         new_tbl = deepcopy(tbl)
         paragraph._p.addnext(new_tbl)
+
 
         document.tables[n_table]._cells[0].paragraphs[0].text = asset.data['ID']
         document.tables[n_table]._cells[0].paragraphs[1].text = 'ID'
