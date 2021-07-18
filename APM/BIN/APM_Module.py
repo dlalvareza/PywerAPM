@@ -18,7 +18,8 @@ import datetime
 
 from APM_Module_Tools import Fitt_constants_HI,Read_Table
 from APM_Module_Regulatory import APM_Regulatory                    # Import regulatory class
-     
+from ACM_Module import ACM                                          # Criticality module
+
 # Function to allocate asset list
 def Read_Table_Conditions(DB_name,table,row,ID,source_type='Excel'):
     if source_type=='Excel':
@@ -90,8 +91,10 @@ class APM():
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     def Risk_Index_During_Time(self,Cont,date_beg,n_hours,trail,df_pof=pd.DataFrame()):
+        cr_obj = ACM(Cont.load_user,Cont.gen_data)                  # Criticality object, create
+        
+        date_beg = datetime.datetime.fromordinal(date_beg.toordinal())
         res = []
-
         for n in range(n_hours):    
             date = date_beg+ datetime.timedelta(hours=n)    
             l_date = date.date()
@@ -126,10 +129,13 @@ class APM():
                 day_name               = calendar.day_name[date.weekday()] 
                 n_days                 = datetime.timedelta(hours=n).days
                 growth_rate            = Cont.f_growth_rate(n_days)                      # Growth rate at day n
-                Cr,SAIDI               = Cont.Run_Load_Flow(Cont.net,day_name,h,Asset_status,growth_rate=growth_rate)  
+                ENS,SAIDI,ENG,BEN      = Cont.Run_Load_Flow(Cont.net,day_name,h,Asset_status,cr_obj,growth_rate=growth_rate)  
                 # Update data              
                 Asset_status['Date']   = date
-                Asset_status['Cr']     = Cr
+                #Asset_status['ES']     =
+                Asset_status['ENS']    = ENS
+                #Asset_status['gen']    = PUR_EN  
+                Asset_status['Cr']     = -BEN
                 Asset_status['SAIDI']  = SAIDI
                 Asset_status['Ite']    = trail
                 res.append(Asset_status)

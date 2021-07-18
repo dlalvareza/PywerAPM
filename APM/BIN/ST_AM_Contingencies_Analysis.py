@@ -58,8 +58,7 @@ def Network_Reconfiguration(net,strategy):
     	l_sequence     = strategy[step]
     	asset_type     = l_sequence['Element_Type']
     	asset_to_disc  = l_sequence['Element_Name']
-    	net_lf        = Disconet_Asset(net_lf,asset_type,asset_to_disc)  
-                        
+    	net_lf        = Disconet_Asset(net_lf,asset_type,asset_to_disc)                  
     return  net_lf  
 
 
@@ -92,12 +91,14 @@ def Load_Growth_By_Day(L_growth):
 # Risk assessment 
 def Power_Risk_assessment(net,secure=1):
     assessment                     = {}
-    load                           = net.res_load['p_mw'].fillna(0)*secure    
+    load                           = net.res_load['p_mw'].fillna(0)*secure   
+    load_base                      = net.load['p_mw']*net.load.scaling  
     assessment['Load']             = pd.DataFrame(
                                                   {'name':net.load.name,
-                                                  'ENS':net.load['p_mw'] - load,
+                                                  'ENS':load_base - load,
                                                   'ES': load})
     assessment['T_ES']             = load.sum()
+    assessment['T_ENS']            = load_base.sum()-load.sum()
     gen_name                       = pd.concat([net.sgen.name, net.storage.name,net.ext_grid.name], ignore_index=True)
     p_gen                          = pd.concat([net.res_sgen.p_mw, net.res_storage.p_mw,net.res_ext_grid.p_mw], ignore_index=True)
     p_gen                          = p_gen.fillna(0)*secure
@@ -111,7 +112,12 @@ def Power_Risk_assessment(net,secure=1):
                                                   {'name':gen_name,
                                                    'source': p_source,
                                                    'gen':p_gen})
-    assessment['purchased_E']      = secure*net.res_ext_grid['p_mw'].values
+    assessment['purchased_E']      = secure*net.res_ext_grid['p_mw'].values[0]
+    # Delta of energy suplied
+    p_gen_base                     = pd.concat([net.sgen.p_mw, net.storage.p_mw], ignore_index=True)
+    p_gen_actual                   = pd.concat([net.res_sgen.p_mw, net.res_storage.p_mw], ignore_index=True)
+    assessment['Delta_E']          = secure*(p_gen_base.sum()-p_gen_actual.sum())
+
     return assessment
 
 # Function for get the contingency analysis    
@@ -253,7 +259,6 @@ def Forecating_Data(net_lf,file,today):
         base        = data.loc[loads]['Base']                  # Power base
         test        = Load_Historical_Data(tag,base)           # Load historical data
         day_data    = test.days[today]                         # Day to analize
-        #coef        = day_data.Filt.fitt.coef_hat              # Fitting coeficients
         f_forecast  = day_data.Filt.fitt.Load_Forecast_by_Day  # Function fitted
         
         # Load forecasting        
@@ -319,12 +324,7 @@ class Real_Time_Contingencies:
     def __init__(self,data_file,pp_case=None):    
         try:
             # Net data
-            #self.net                = Load_Net_Pandapower(data_file,pp_case)
             self.net                = Load_Net_Pandapower(data_file['net_file'],pp_case)
-            #self.load_forecast      = Fourier_Fit(ID_Load_Tag_File)
-            #self.asset_list         = Make_Asset_List(ID_Load_Tag_File)
-            #self.load_user          = User_Data_List(ID_Load_Tag_File)                        # Users data by load
-            #self.gen_data           = User_Data_List(ID_Load_Tag_File,sheet='GEN_TAGS')       # Generation data
             self.load_forecast      = Fourier_Fit(data_file['load_data'])
             self.asset_list         = Make_Asset_List(data_file['portfolio_source'])
             self.load_user          = User_Data_List(data_file['load_data'])                        # Users data by load
@@ -345,16 +345,9 @@ class Real_Time_Contingencies:
         strategy_id = self.asset_list.loc[Asset_id].Strategy
         if strategy_id in self.Cont_Strategies.keys(): 
             net_lf = Network_Reconfiguration(net_lf,self.Cont_Strategies[strategy_id])
-
-         
-        #asset_type    = self.asset_list.loc[Asset_id].Element_Type
-        #asset_to_disc = self.asset_list.loc[Asset_id].Element_Name
-        #if not asset_type != asset_type:  # Check if a decision is perfromed
-        #    net_lf = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
             
         asset_type    = self.asset_list.loc[Asset_id].Disc_Type
         asset_to_disc = self.asset_list.loc[Asset_id].Asset_To_Disconet
-        #net_lf        = self.Disconet_Asset(net_lf,asset_type,asset_to_disc)
         net_lf        = Disconet_Asset(net_lf,asset_type,asset_to_disc)
 
         return net_lf 
@@ -499,8 +492,7 @@ class Real_Time_Contingencies:
         return df_sec,df_load, assessment
 
 # Run load flow
-    def Run_Load_Flow(self,net,day,hour,asset_status,growth_rate=1):
-
+    def Run_Load_Flow(self,net,day,hour,asset_status,cr_obj,growth_rate=1):
             run_lf = False
             if True in asset_status.values():                                                    # Check if some asset is disconect
                 df_load_forecast     = self.Forecast_Val_By_Day_By_Hour(day,hour)                #Load forecast filtered
@@ -511,39 +503,47 @@ class Real_Time_Contingencies:
 
                 for asset in asset_status:                                              # Disconnet assets    	
                     if asset_status[asset] ==True:
-                        run_lf               = True
-                        #net_lf               = self.Disconet_Asset(net_lf,asset)
+                        run_lf             = True
                         net_lf             = self.Net_Configurarion_during_Contingency(net_lf,asset)
             
-            df   = pd.DataFrame()                                                       # Empty dataframe
+            #df   = pd.DataFrame()                                                       # Empty dataframe
             ENS   = 0
-            SAIDI = 0
+            SAIDI = 1
             if run_lf:
                 N_Users = self.N_Users
                 try:
                     pp.runpp(net_lf)                                                        # Run load flow with pandapower
-                    df                   = ContingencyAnalysis(net_lf)                      # Check contingencies
-
-                    load_cut  = round(net_lf.load.p_mw.sum()*growth_rate-net_lf.res_load.p_mw.sum(),3)  # Check if loading was cutting
-                    if not df.empty:        # Security margins are violeted
-                        ENS = net_lf.load.p_mw.sum()      
-                        SAIDI = 1
-                    elif load_cut>0:               
-                        ENS = load_cut
+                    df_cont                   = ContingencyAnalysis(net_lf)                      # Check contingencies
+                    l_security = 0
+                    SAIDI      = 0
+                    if df_cont.empty:
+                        l_security = 1
                         for index, row  in net_lf.load.iterrows():
-                            load_name = row['name']
-                            p_exp = row.p_mw*row.scaling
-                            p_sup = net_lf.res_load.loc[index].p_mw
+                            load_name     = row['name']
+                            p_exp         = row.p_mw*row.scaling
+                            p_sup         = net_lf.res_load.loc[index].p_mw
                             users_by_load = self.load_user.loc[load_name].N_Users
-                            p_ratio = (p_exp-p_sup)/p_exp
-                            SAIDI   += p_ratio*users_by_load/N_Users
-                    SAIDI = round(SAIDI,5)
+                            p_ratio       = (p_exp-p_sup)/p_exp
+                            SAIDI        += p_ratio*users_by_load/N_Users
 
+                    cr_assessment_by_hour   = Power_Risk_assessment(net_lf,l_security) 
+                    ENS                     = cr_assessment_by_hour['T_ENS']
+                    ENG                  = cr_assessment_by_hour['purchased_E']
+
+                    df_load      = cr_assessment_by_hour['Load']
+                    df_cr_load   = cr_obj.Monetized_Energy_During_Contingency_by_hour(df_load)
+                    ENS_Cost     = df_cr_load.ENS_Cost.sum()
+                    
+                    df_gen       = cr_assessment_by_hour['Gen']
+                    df_cr_gen    = cr_obj.Monetized_Gen_During_Contingency_by_hour(df_gen) 
+                    # Benefit
+                    benf         = cr_obj.Benefit_During_Contingency(df_cr_load,df_cr_gen)
                 except:          # If the load flow don't converge
-                    ENS   = net_lf.load.p_mw.sum()
+                    #print('And stupid error')
+                    ENS   = 0#net_lf.load.p_mw.sum()
                     SAIDI = 1
-                
-            return ENS,SAIDI
+
+            return ENS,SAIDI,ENG,benf
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                           #
