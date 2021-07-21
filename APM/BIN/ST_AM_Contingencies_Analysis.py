@@ -73,7 +73,8 @@ def Load_AM_Plan(File):
     data = Load_Contingency_Strategies(File)
     #with open(File) as json_file:
     #    data = json.load(json_file)        
-    df = pd.DataFrame.from_dict(data, orient='index')
+    df         = pd.DataFrame.from_dict(data, orient='index')
+    df['Date'] = pd.to_datetime(df['Date'])#pd.to_datetime(df['Date'])
     return  df  
 
 
@@ -509,13 +510,19 @@ class Real_Time_Contingencies:
             #df   = pd.DataFrame()                                                       # Empty dataframe
             ENS   = 0
             SAIDI = 1
+            ENG   = 0
+            benf  = 0
             if run_lf:
-                N_Users = self.N_Users
-                try:
-                    pp.runpp(net_lf)                                                        # Run load flow with pandapower
-                    df_cont                   = ContingencyAnalysis(net_lf)                      # Check contingencies
+                    N_Users = self.N_Users
+                #try:
                     l_security = 0
-                    SAIDI      = 0
+                    try:  
+                       pp.runpp(net_lf)                                                        # Run load flow with pandapower
+                    except:
+                       print('Error running load flow')
+                    df_cont                   = ContingencyAnalysis(net_lf)                      # Check contingencies
+                    
+                    SAIDI      = 1
                     if df_cont.empty:
                         l_security = 1
                         for index, row  in net_lf.load.iterrows():
@@ -538,10 +545,10 @@ class Real_Time_Contingencies:
                     df_cr_gen    = cr_obj.Monetized_Gen_During_Contingency_by_hour(df_gen) 
                     # Benefit
                     benf         = cr_obj.Benefit_During_Contingency(df_cr_load,df_cr_gen)
-                except:          # If the load flow don't converge
-                    #print('And stupid error')
-                    ENS   = 0#net_lf.load.p_mw.sum()
-                    SAIDI = 1
+                #except:          # If the load flow don't converge
+                #    ENS   = 0#net_lf.load.p_mw.sum()
+                #    SAIDI = 1
+                #    ENG
 
             return ENS,SAIDI,ENG,benf
 

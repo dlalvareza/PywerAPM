@@ -9,13 +9,15 @@ import pickle
 import pandas as pd
 import numpy as np
 
+
+from OPT_Module import OPT
+
 def disc_factor(n,r):
     return 1/((1+r)**n)
 
 def Report_ACM_df_Desc(Date,DF):
     year    = Date.year
-    month   = Date.month
-    #return  DF[(DF.Date.dt.year==year) & (DF.Date.dt.month==month)]
+    #month   = Date.month
     return  DF[(DF.Date.dt.year==year)]
 
 def cash_flow(DF,R):
@@ -28,12 +30,9 @@ def cash_flow(DF,R):
 
 def Compute_Ri_Df(asset,df,date_beg,d_day_for,Cr_Fixed):
 
-
     df_con         = asset.POF_R_Assessment(date_beg,d_day_for*24)
     df_con['Date'] = pd.to_datetime(df_con['Date'])
-    
-    #if df.empty: # Check if montecarlo simulation is provided
-    #    df['Date'] = df_con['Date']
+  
 
     RI_df         = pd.DataFrame()
     N_years       = int(d_day_for/365.25+1)
@@ -48,12 +47,12 @@ def Compute_Ri_Df(asset,df,date_beg,d_day_for,Cr_Fixed):
         else: 
             df_by_month     = Report_ACM_df_Desc(date,df)
 
-        df_pof_by_month = Report_ACM_df_Desc(date,df_con)
+        df_pof_by_month     = Report_ACM_df_Desc(date,df_con)
 
         cr_temp   = 0
         if not df.empty:   # Check if montecarlo simulations are provided
-            grouped_df      = df_by_month.groupby("Ite")
-            cr_temp     = grouped_df.sum().Cr.values
+            grouped_df     = df_by_month.groupby("Ite")
+            cr_temp        = grouped_df.sum().Cr.values
             if cr_temp.size ==0:
                 cr_temp = 0
             else:    
@@ -97,55 +96,66 @@ class Decision_Making():
     
     def run_scenario(self,Name,DESC):
         # Update decisions
-        df                  = DESC.groupby(['Asset_id'])
-        self.scenario[Name] = self.scenario_assessment(df_desc=df)
+        #df                  = DESC.groupby(['Asset_id'])
+        df                  = DESC#.groupby(['Asset_id'])
+        self.scenario[Name] = self.scenario_assessment(df_desc=DESC)
         
 
-    def scenario_assessment(self,df_desc=None):
+    def scenario_assessment(self,df_desc=pd.DataFrame()):
         import copy 
         scenario     = {}
         l_assets     = copy.deepcopy(self.assets) 
         
-        if not df_desc ==None:                  # Update assets conditions 
-            scenario  = self.scenario['Base'].copy()
-            for asset_id,df_dec in df_desc:
-                asset                           = l_assets.Asset_Portfolio[asset_id]
-                asset.decision                  = df_dec  # Update decision
-                asset_name                      = l_assets.Asset_Portfolio_List.loc[asset_id].Name
+        if not df_desc.empty:                  # Update assets conditions 
+            l_scenario  = self.scenario['Base'].copy()
+            for project in df_desc.iterrows():
+                try: 
+                    l_project = project[1] 
+                    name                = l_project.Asset_Name
+                    df                  = l_assets.Asset_Portfolio_List
+                    asset_id            = df[df['Name'] == name].index.values[0]
+                    l_asset             = l_assets.Asset_Portfolio[asset_id]
+                    data                = l_scenario[asset_id]
+                    opt_des             = OPT(l_asset,data)  
+                    n_years             = self.N_days/365.25
+                    t_desc              = l_project.Date.date()
 
-                # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #    
-                df = pd.DataFrame()
-                if not self.df_ACP.empty:
-                    df             = self.df_ACP[self.df_ACP[asset_name]==True]
-                    df             = df[['Date','Cr','Ite']]
+                    t_remp              = (t_desc-self.date_beg).days/365.25
+                    RI_df               = l_scenario[asset_id]['RI'].copy()
 
-                # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #    
-                cr_fixed = 0
-                if not self.df_AC_Fixed.empty:
-                    mttr     = self.df_AC_Fixed.loc[asset_id].MTTR
-                    #print(mttr)
-                    cr       =  self.df_AC_Fixed.loc[asset_id].T_Cr
-                    #cr_fixed = mttr*cr
-                    cr_fixed = cr 
+                    #print(l_project) 
+                    if l_project.Des_Type== 'Replace':
+                        df_desc             = opt_des.Replacement_asseesment(n_years,t_remp)
+                        cost                = df.loc[asset_id].CAPEX
+                        desc_year           = project[1].Date.date().year
+                        RI_df.loc[RI_df['date'].dt.year == desc_year, 'Inves'] = -cost
+                    elif l_project.Des_Type == 'Maintenance':
+                        opt_des.maint_conditions(hi_rem=0.2)
+                        df_desc             = opt_des.Maintenance_asseesment(n_years,t_remp)
+                        N                   = int(n_years/t_remp)
+                        x1                  = np.linspace(t_remp, n_years, N, endpoint=False)
+                        x1                  = self.date_beg.year+x1
+                        desc_year           = list(x1.astype(int))
+                        cost                = df.loc[asset_id].OPEX
+                        for y in desc_year: # Update costs
+                            RI_df.loc[RI_df['date'].dt.year == y, 'Inves'] = -cost
+                        
 
-                #df                              = self.df_ACP[self.df_ACP[asset_name]==True]
-                #df                              = df[['Date','Cr','Ite']]
-                
-                RI_df,df_con                    = Compute_Ri_Df(asset,df,self.date_beg,self.N_days,cr_fixed)
-                
-                # Update cost of the decision 
-                desc                            = asset.decision
-                for index, value in desc.Date.items():
-                    desc_year = pd.to_datetime(value).year
-                    #desc_year                       = pd.to_datetime(desc['Date']).dt.year[0]
-                
-                    desc_cost                       = -desc['Cost'][index] 
-                    RI_df.loc[RI_df['date'].dt.year == desc_year, 'Inves'] = desc_cost
-                
-                # Compute cash flow    
-                df_cf,PV                        = cash_flow(RI_df,self.R)
-                scenario[asset_id]              = {'RI':RI_df,'Con':df_con,'CF':df_cf,'PV':PV} 
-            return scenario
+                    df_pof_by_year      = df_desc.groupby(df_desc.Time.dt.year).mean()
+                    
+                    RI_df.pof          = df_pof_by_year.pof.values
+                    RI_df.RI           = RI_df.pof*RI_df.Cr
+
+                    #print(RI_df)
+                    # Compute cash flow    
+                    df_cf,PV                        = cash_flow(RI_df,self.R)
+                    df_con                          = l_scenario[asset_id]['Con']
+
+                    l_scenario[asset_id]              = {'RI':RI_df,'Con':df_con,'CF':df_cf,'PV':PV} 
+                except:
+                    print('Project '+name+ ' is not well defined')
+                    pass
+            return l_scenario
                 # Update risk 
         else: # Mean that it is the base scenario   
             for asset_id in l_assets.Asset_Portfolio.keys():
@@ -160,9 +170,8 @@ class Decision_Making():
                     
                 cr_fixed = 0
                 if not self.df_AC_Fixed.empty:
-                    mttr     = self.df_AC_Fixed.loc[asset_id].MTTR
+                    #mttr     = self.df_AC_Fixed.loc[asset_id].MTTR
                     cr       =  self.df_AC_Fixed.loc[asset_id].T_Cr
-                    #cr_fixed = mttr*cr 
                     cr_fixed = cr 
 
                 RI_df,df_con             = Compute_Ri_Df(asset,df,self.date_beg,self.N_days,cr_fixed)
