@@ -32,7 +32,7 @@ class FR():
     def __init__(self,x,y,l,lam_0):
         
         fr_Forecast        = FR_Function_to_fit(l,lam_0)
-        (k,t_0),_          =  curve_fit(fr_Forecast,x,y)
+        (k,t_0),_          =  curve_fit(fr_Forecast,x,y, maxfev=5000)
         
         # Update logistic fucntion parameter 
         self.L      = l

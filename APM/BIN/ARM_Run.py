@@ -7,15 +7,10 @@
 #                                             #
 # # # # # # # # # # # # # # # # # # # # # # # #
 
-
-
 from PywerAPM_Case_Setting import*
-
 
 from APM_Module import APM 
 from Processing_tools import Report_APM_df, Report_APM_Meta_data, Report_ACM_Meta_data
-
-
 import pandas as pd
 from datetime import datetime
 
@@ -48,10 +43,8 @@ def load_criticality(cr_type='Monte_Carlo',assets=None):
         df_group = assets.groupby(['Disc_Type'])
         for group in df_group:              # Read criticality by type of asset 
             name = group[0]
-            #df_type[name]        = pd.read_excel(cr_type, sheet_name=name,usecols = "A:H")
             df_type       = pd.read_excel(cr_type, sheet_name=name,usecols = "A:H")
             for index, row in df_type.iterrows(): 
-                #df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Fin','Cr_Opt','Cr_Env','Cr_Sec']] = [row.FINANCIAL,row.OPERATIVE,row.ENVIRONMENTAL,row.SECURITY]
                 df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Env','Cr_Sec','Cr_Leg']] = [row.ENVIRONMENTAL,row.SECURITY,row.LEGAL]
         # Total criticality
         df['T_Cr'] = df['Cr_Env']+df['Cr_Sec']+df['Cr_Leg']+df['Cr_Fin'] 
