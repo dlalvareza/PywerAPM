@@ -17,11 +17,16 @@ import seaborn as sns
 from math import pi
 from scipy import stats
 
+import itertools
 import matplotlib.ticker as ticker
 
-color_limits = ['#259B00','#CFE301','#FF5733','#900C3F']
-hi_limits    = [0.25,0.5,0.75,1]
-cum_ens_pof  = [0.85,0.95,0.99]
+color_limits    = ['#259B00','#CFE301','#FF5733','#900C3F']
+hi_limits       = [0.25,0.5,0.75,1]
+cum_ens_pof     = [0.85,0.95,0.99]
+line_marks      = ['-','--','-.']
+
+List_line_style = itertools.cycle(line_marks)
+
 
 warn_colors =['#259B00','#CFE301','#FF5733','#900C3F','#339900','#99CC33','#FFCC00','#FF9966','#CC3300']
 warn_colors = sns.color_palette(warn_colors)
@@ -65,17 +70,6 @@ def Plot_All_Days_Hour_Data(DF,text,S_base=1,TR=True,LN=True,BU=False,day_list=N
         day_list = list(calendar.day_name)
 
     for day in day_list:
-        #df    = DF[DF.Day==day]
-        #if not BU:
-        #    df     = df[(df.Type != 'BUS')]
-        #if not TR:
-        #    df     = df[(df.Type != 'TR')]
-        #if not LN:
-        #    df     = df[(df.Type != 'LN')]
-
-        #x,y,s,c = DF_to_List(df,S_base,BU) 
-        #l_plot,ax = Plot_Scater(x,y,s,c,BU,LN)
-        #Scater_Labels(l_plot,ax,S_base,BU=BU,LN=LN)
         fig = Plot_Security_Opteration(DF,day,S_base,TR,LN,z)
         plt.savefig(text+day+'.pdf', bbox_inches = "tight")
         plt.close()
@@ -132,6 +126,7 @@ def Scater_Labels(plot,ax,s_base,BU=False,LN=False):
 #-> # # # # # # # # # # # # # # # # # # # # # # # # # #  #     
 def Plot_Stack_By_Day(DATA,DAY):
         #fig, ax = plt.subplots(figsize=(8,5))
+        plt.close()
         fig, ax = plt.subplots(figsize=(16,9))
         df       = DATA[DATA.Day==DAY]
         df       = df.drop(columns="Day")
@@ -577,15 +572,18 @@ def Asset_Condition_by_Type(a_list,Asset,Cond_Name):
             asset_l.append(n)
     asset_list = asset_l
     sns.set(style="whitegrid")
-    sns.set_palette(pkmn_type_colors)
-
+    #sns.set_palette(pkmn_type_colors)
+    sns.set_palette("dark")
+#    palette= 
     #fig, ax = plt.subplots(figsize= [8, 4])            
-    fig, ax = plt.subplots(figsize= [16, 9])            
+    fig, ax = plt.subplots(figsize= [10, 5.625])   
+    ax.grid(False)         
 
     x_max = max(Asset.Asset_Portfolio[asset_list[0]].cond[Cond_Name].historic_data.Date.values)
     x_min = min(Asset.Asset_Portfolio[asset_list[0]].cond[Cond_Name].historic_data.Date.values)
     y_max = 0
-        
+       
+
     for n in asset_list:
         asset = Asset.Asset_Portfolio[n]
         df    = asset.cond[Cond_Name].historic_data
@@ -595,9 +593,7 @@ def Asset_Condition_by_Type(a_list,Asset,Cond_Name):
             x_max = df.Date.max()
         if x_min>df.Date.min():
             x_min = df.Date.min()    
-
-        sns.lineplot(x='Date', y='Val', data=df,label=asset.name,ax=ax)
- 
+        
      # Set plot y limits
     if y_max<max(asset.cond[Cond_Name].limits):
         y_max = max(asset.cond[Cond_Name].limits)
@@ -619,13 +615,25 @@ def Asset_Condition_by_Type(a_list,Asset,Cond_Name):
                 if y2<y_max:
                     y2 = y_max
 
-        ax.axhspan(y1, y2 ,facecolor=color_limits[n], alpha=0.2)
+        ax.axhspan(y1, y2 ,facecolor=color_limits[n], alpha=0.4)
+        #ax.axhline(y=y1,color=color_limits[n])
 
+    k = 0    
+    n_assets =  len(asset_list)
+
+    l_line_style           = [next(List_line_style)for i in range(n_assets)]
     
+    for n in asset_list:
+        asset = Asset.Asset_Portfolio[n]
+        df    = asset.cond[Cond_Name].historic_data
+        sns.lineplot(x='Date', y='Val', data=df,label=asset.name,ax=ax,linestyle=l_line_style[k])
+        k +=1 
+            
     ax.set(ylabel=Cond_Name)
     ax.set_ylim(y_min, y_max)
     ax.set_xlim(x_min, x_max)
-    ax.legend(loc='lower center', ncol=6, bbox_to_anchor=(0.5, 1), fontsize='small')
+    ax.legend(loc='lower center', ncol=6, bbox_to_anchor=(0.5, 1), fontsize='medium')
+    #ax.legend(fontsize='medium')
                    
     return fig
 def Plot_Asset_Condition_Assessment(Asset,Type=None,Cond_Name='TDCG'):

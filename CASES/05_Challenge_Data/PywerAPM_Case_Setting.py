@@ -4,7 +4,8 @@ import sys
 
 
 # Performance assessment Settings
-path                    = '../CASES/05_Challenge_Data/' 
+#path                    = '../CASES/05_Challenge_Data/' 
+path                    = '/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/' 
 load_growth             = 0.02                              # Assumed load growth per year   
 date_beg                = datetime.date.today()
 #h_end                   = 2*24*365.25                          # Assumed period of planning 
@@ -19,7 +20,7 @@ test_date_4 = datetime.date(2030, 1, 1)
 test_date_5 = datetime.date(2035, 1, 1)
 
 case_settings = {
-				'path'              : '../',
+				'path'              : '/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/',
 				'net_file'          : path+'challege_net.json',	
 				'load_data'         : path +'Challenge_Asset_Portfolio.xlsx',
 				'Cr'                : path+'01_Data/CRITICALITY.xlsx',

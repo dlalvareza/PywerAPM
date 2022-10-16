@@ -42,13 +42,13 @@ def Report_APM_df(Assets,date_beg,Type=None,N_hours=0):
             hi.append(df['HI'].values[-1])
 
     data_dic['HI']    = hi
+    data_dic['year']  = date_beg.year
     data_dic['EL']    = [Assets.Asset_Portfolio[n].elap_life for n in asset_list]
     data_dic['R_EL']  = [Assets.Asset_Portfolio[n].apm_reg.reg_el for n in asset_list] 
     # Location 
-    
-    data_dic['Loc'] =  [Assets.Asset_Portfolio[n].data['Location'] for n in asset_list]
-    data_dic['Lat'] =  [Assets.Asset_Location[Assets.Asset_Location.index==Assets.Asset_Portfolio[n].data['Location']].Lat.values[0] for n in asset_list]
-    data_dic['Lon'] =  [Assets.Asset_Location[Assets.Asset_Location.index==Assets.Asset_Portfolio[n].data['Location']].Lon.values[0] for n in asset_list]
+    data_dic['Loc']   =  [Assets.Asset_Portfolio[n].data['Location'] for n in asset_list]
+    data_dic['Lat']   =  [Assets.Asset_Location[Assets.Asset_Location.index==Assets.Asset_Portfolio[n].data['Location']].Lat.values[0] for n in asset_list]
+    data_dic['Lon']   =  [Assets.Asset_Location[Assets.Asset_Location.index==Assets.Asset_Portfolio[n].data['Location']].Lon.values[0] for n in asset_list]
 
     # Return dataframe  
     df     = pd.DataFrame.from_dict(data_dic)
@@ -79,6 +79,8 @@ def Report_APM_Meta_data(df,year):
 
 def Report_ACM_Meta_data(DF,year):
     df = DF[DF.Year==year]
+    print(DF)
+    print(df)
     data = {
             'Cr'     : round(df['Cr'].sum(),1),
             'RI'     : round(df['RI'].sum(),2),
@@ -149,7 +151,9 @@ def Report_ACM_df(DF,Asset_dF,year_list,N,Type=None,Factor='GWh'):
     
     if Factor=='GWh':
         data_dic['ENS']      = [n/1000 for n in ens]
-        data_dic['RI']       = [round(n/1000,2) for n in ri_dic]
+        ##data_dic['RI']       = [round(n/1000,2) for n in ri_dic]
+        #data_dic['RI']       = [round(n/1000,2) for n in ri_dic]
+        data_dic['RI']       = ri_dic
     else:
         data_dic['ENS']      = ens
         data_dic['RI']       = ri_dic

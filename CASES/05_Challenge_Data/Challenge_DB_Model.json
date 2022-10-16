@@ -1,6 +1,6 @@
 {	
 	"TR":{
-		"DB_Name": "../CASES/05_Challenge_Data/01_Data/TR_CIGRE_Net_DER.xlsx",
+		"DB_Name": "/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/01_Data/TR_CIGRE_Net_DER.xlsx",
 		"Tables":{
 			"PF"     : "Electric_Test",
 			"IP"     : "Electric_Test",
@@ -26,7 +26,7 @@
 			}
 		},
 	"CB_SF6":{
-			"DB_Name": "../CASES/05_Challenge_Data/01_Data/CBSF6_CIGRE_Net_DER.xlsx",
+			"DB_Name": "/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/01_Data/CBSF6_CIGRE_Net_DER.xlsx",
 			"Tables":{
 				"SF6_Leaks"             : "GAS",
 				"Gas_Condition"      : "GAS",
@@ -38,7 +38,7 @@
 				}
 			},		
 	"CB":{
-			"DB_Name": "../CASES/05_Challenge_Data/01_Data/CONDITION.xlsx",
+			"DB_Name": "/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/01_Data/CONDITION.xlsx",
 			"Tables":{	
 				"R_Contact"     : "CB_HS",
 				"Vaccum_Bottle" : "CB_HS",
@@ -46,14 +46,14 @@
 					}
 				},
 	"GEN":{
-			"DB_Name": "../CASES/05_Challenge_Data/01_Data/CONDITION.xlsx",
+			"DB_Name": "/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/01_Data/CONDITION.xlsx",
 			"Tables":{	
 				"Mechanical"     : "GEN_HS",
 				"Switchgear"     : "GEN_HS",
 				"Foundation"     : "GEN_HS"						}
 				},
 	"BAT":{
-			"DB_Name": "../CASES/05_Challenge_Data/01_Data/CONDITION.xlsx",	
+			"DB_Name": "/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/01_Data/CONDITION.xlsx",	
 			"Tables":{	
 					"Charge"      : "BAT_HS",
 					"Discharge"   : "BAT_HS",
@@ -62,7 +62,7 @@
 					"Impedance"   : "BAT_HS"						}
 					},
 	"AUX":{
-			"DB_Name": "../CASES/05_Challenge_Data/01_Data/AUX_CIGRE_Net_DER.xlsx",
+			"DB_Name": "/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/01_Data/AUX_CIGRE_Net_DER.xlsx",
 			"Tables":{
 				"Room"                     : "Visual_Room",
 				"Containers"          : "Visual_Containers",
@@ -76,7 +76,7 @@
 					}
 				},												
     "LN":{
-			"DB_Name": "../CASES/05_Challenge_Data/01_Data/OHL_CIGRE_Net_DER.xlsx",
+			"DB_Name": "/home/dlalvareza/Documents/02_Develop/PywerAPM/PywerAPM/CASES/05_Challenge_Data/01_Data/OHL_CIGRE_Net_DER.xlsx",
 			"Tables":{
 				"Aeolian"             : "Mechanical",
 				"Torsion"             : "Mechanical",

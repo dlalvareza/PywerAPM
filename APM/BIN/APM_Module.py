@@ -49,6 +49,7 @@ class APM():
             self.case_path  =  case_sett['path']
         else:
             self.case_path   = ''     
+               
         # Asset porfolio source
         source = case_sett['portfolio_source']
         
@@ -59,7 +60,6 @@ class APM():
 
         #db_structure = case_sett['database_sett']
         for id,row in self.Asset_Portfolio_List.iterrows():
-            #asset[id] = Asset_M(row,id,db_structure)
             asset[id] = Asset_M(row,id,case_sett,self.case_path)
         self.Asset_Portfolio = asset
         self.load_growth     = load_growth
@@ -166,7 +166,6 @@ class Asset_M():
         self.db        = db
         db_struc       = db['database_sett']#db
         
-        #self.decision  = None                 # List of decisions 
         self.decision  =pd.DataFrame() 
 
         self.id        = id
@@ -221,7 +220,7 @@ class Asset_M():
     def Load_Asset_Data(self,Model):
         date_base_name =  Model['DB_Name']
         df = Read_Asset_Data(date_base_name,self.type,self.id)
-        dic =  df.to_dict('r') 
+        dic =  df.to_dict('r')
         dic = dic[0]
         dic['Opt_Year'] = datetime.date(dic['Opt_Year'], 1, 1)
 
@@ -342,7 +341,7 @@ class Asset_M():
         l_curr_year    = date.year
         l_opt_year     = self.data['Opt_Year'].year
         data = Read_Table(self.db['database_Cons_Set'])
-        #'Cons'
+
         data           = Read_Table(data['Cons']['DB_Name'])        # Data bases with average lifes
         l_AL           = data[self.type]                            # Average life in years
 
@@ -446,7 +445,6 @@ class Asset_Condition():
     def eval_cond_fit_func(self,date):
         #x = (date.date() - self.opt_date).days/365        # Date to eval in years
         x = (date - self.opt_date).days/365.25        # Date to eval in years
-        #print(date)
         #x = (date.date() - self.opt_date).days/365        # Date to eval in years
         y = self.forecast_f(x) 
         return y

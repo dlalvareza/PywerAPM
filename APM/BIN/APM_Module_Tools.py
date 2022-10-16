@@ -38,7 +38,10 @@ def HI_Forecast(t,beta,alpha):
 # Funtion to fitt weibull HI parameters
 def Fitt_constants_HI(x,y):
      # Curve fitt of HI
-    (beta,alpha),_  =  curve_fit(HI_Forecast,x,y,method='dogbox')
+    (beta,alpha),_  =  curve_fit(HI_Forecast,x,y, p0=[1,1],method='dogbox')
+    #print('-----')
+    #print(beta)
+    #print(alpha)
     def eval_hi(t):
         return HI_Forecast(t,beta,alpha)
 

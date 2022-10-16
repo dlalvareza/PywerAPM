@@ -33,6 +33,7 @@ class FR():
         
         fr_Forecast        = FR_Function_to_fit(l,lam_0)
         (k,t_0),_          =  curve_fit(fr_Forecast,x,y, maxfev=5000)
+        #(k,t_0),_          =  curve_fit(fr_Forecast,x,y)
         
         # Update logistic fucntion parameter 
         self.L      = l

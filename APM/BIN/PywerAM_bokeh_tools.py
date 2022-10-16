@@ -240,10 +240,10 @@ def Plot_Scat_RI(df,col, radius='RI'):
     tooltips = [
           ("Name", "@Name"),
           #("Substation", "@Loc"),
-          ("Year", "@Year"),
+          #("Year", "@Year"),
           #("POF", "@POF"),
           #("EL", "@EL"),
-          ("Type", "@Type"), 
+          #("Type", "@Type"), 
     ]  
 
     # Normalize the criticality
@@ -257,7 +257,9 @@ def Plot_Scat_RI(df,col, radius='RI'):
     df['r'] = X / np.linalg.norm(X)
 
     df['color']  = [limit_color(i) for i in df['r'].values]
-    df['r']      = (1+df['r'])/16
+    #df['r']      = (1+df['r'])/16
+    df['r']      = (1+df['r'])
+
 
     source = ColumnDataSource(df)
 
@@ -322,10 +324,12 @@ def Plot_Stacker(df):
 def plot_condition_forecast(Cond,Asset,N_Days):
     
     df    = Asset.cond[Cond].historic_data
-    fig      = figure(title="PywerAM - Condition forecasting: " + Cond, plot_height=500, plot_width=950,background_fill_color='#808080',x_axis_type='datetime')
-
+    #->fig      = figure(title="PywerAM - Condition forecasting: " + Cond, plot_height=500, plot_width=950,background_fill_color='#808080',x_axis_type='datetime')
+    fig      = figure(title="PywerAM - Condition forecasting: " + Cond, plot_height=500, plot_width=750,x_axis_type='datetime',tools=[])
+    
     # Plot measurements
-    fig.circle(df["Date"], df["val_nor"],fill_alpha=0.5, size=5)
+    #->fig.circle(df["Date"], df["val_nor"],fill_alpha=0.5, size=5)
+    fig.circle(df["Date"], df["val_nor"], size=8)
     
     # Operatiing conditions
     date_test_beg      = df['Date'].min().date()
@@ -392,7 +396,8 @@ def Plot_HI_Forecast_Stacked(ASSET,TIME):
     
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #      
 def plot_condition_assessment(DF):
-    fig      = figure(title="PyweAM", plot_height=500, plot_width=950,background_fill_color='#808080',x_axis_type='datetime')
+    #fig      = figure(title="PyweAM", plot_height=500, plot_width=950,background_fill_color='#808080',x_axis_type='datetime')
+    fig      = figure(title="PyweAM", plot_height=250, plot_width=350,x_axis_type='datetime',tools=[])
     fig.line(DF['Date'], DF['HI'], legend_label="HI" ,color='#A6CEE3')   
     fig.line(DF['Date'], DF['lambda'], legend_label="FR",color='#B2DF8A')   
     fig.line(DF['Date'], DF['POF'].div(100), legend_label="POF", color='#FF0000')   

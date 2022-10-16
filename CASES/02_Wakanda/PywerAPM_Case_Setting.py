@@ -14,16 +14,22 @@ from ST_AM_Contingencies_Ploty import  Plot_Stack
 
 # Performance assessment Settings
 
-file_tags              = 'APM/DATA/IEEE39_Asset_Data.xlsx'
-asset_portfolio_source = 'APM/DATA/IEEE39_Asset_Data.xlsx'
+file_tags              = 'CASES/04_Boot_Data/Wakanda_Asset_Portfolio.xlsx'
+#asset_portfolio_source = 'APM/DATA/IEEE39_Asset_Data.xlsx'
+asset_portfolio_source = 'CASES/04_Boot_Data/Wakanda_Asset_Portfolio.xlsx'
 net_file               = 'APM/DATA/IEEE39NODES.xlsx'
-date_beg               = datetime.date.today() 
-load_growth            = 0.02                              # Assumed load growth per year   
-n_hours                = int(25*24*365.25)                 # Assumed period of planning 
-#h_end                  = 5*24*365                         # Assumed period of planning 
+load_growth             = 0.02                              # Assumed load growth per year   
+date_beg                = datetime.date.today()
+
+n_years                 = 35
+n_days                  = int(n_years*365.25)               # Assumed period of planning 
+n_hours                 = n_days*24
+N                       = 100#750                                 # Monte-Carlo Simulations                               # Monte-Carlo Simulations  
+
+results_path            = 'RESULTS/'
 
 case_settings = {
-				'portfolio_source'  : 'CASES/02_Wakanda/Wakanda_Asset_Portfolio.xlsx',
+				'portfolio_source'  : asset_portfolio_source,#'CASES/02_Wakanda/Wakanda_Asset_Portfolio.xlsx',
 				'database_sett'     : 'CASES/02_Wakanda/Wakanda_DB_Model.json',
 				'database_Cons_Set' : 'CASES/02_Wakanda/Wakanda_DB_Data.json' 
 				}

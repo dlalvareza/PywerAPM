@@ -35,10 +35,12 @@ def run_criticality():
 def load_criticality(cr_type='Monte_Carlo',assets=None):      
     if cr_type == 'Monte_Carlo':               # Load Montecarlo simulations
         store   = pd.HDFStore(results_path+'Results_ACM.h5')
+        print(results_path+'Results_ACM.h5')
         df     = store['df']
         store.close()
     else:                         # Fixed conditios
         df  = assets.copy()
+#        print(df)
         df_type  = {}
         df_group = assets.groupby(['Disc_Type'])
         for group in df_group:              # Read criticality by type of asset 
@@ -46,6 +48,7 @@ def load_criticality(cr_type='Monte_Carlo',assets=None):
             df_type       = pd.read_excel(cr_type, sheet_name=name,usecols = "A:H")
             for index, row in df_type.iterrows(): 
                 df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Env','Cr_Sec','Cr_Leg']] = [row.ENVIRONMENTAL,row.SECURITY,row.LEGAL]
+                #df.loc[(df.Disc_Type==name) & (df.Asset_To_Disconet==row.Asset),['Cr_Fin','Cr_Env','Cr_Sec','Cr_Leg']] = [row.FINANCIAL,row.ENVIRONMENTAL,row.SECURITY,row.LEGAL]
         # Total criticality
         df['T_Cr'] = df['Cr_Env']+df['Cr_Sec']+df['Cr_Leg']+df['Cr_Fin'] 
     return df
