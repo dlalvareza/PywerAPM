@@ -19,5 +19,5 @@ dlalvareza@unal.edu.co
 ## 5. Citing 
 If PywerAPM contributes to a project that leads to publication, please acknowledge this by citing as follows:
 
-Alvarez, D., Rodriguez, D., Cardenas, A., Silva, F. M. F. D., Bak, C. L., Garcia, R., & Rivera, S. (2021). Optimal Decision Making in Electrical Systems Using an Asset Management Framework. Manuscript submitted for publication.
+Alvarez, David L., Diego F. Rodriguez, Alben Cardenas, F. F. da Silva, Claus Leth Bak, Rodolfo García, and Sergio Rivera. 2021. "Optimal Decision Making in Electrical Systems Using an Asset Risk Management Framework" Energies 14, no. 16: 4987. https://doi.org/10.3390/en14164987 
 
